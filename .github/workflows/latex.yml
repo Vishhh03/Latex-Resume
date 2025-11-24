@@ -1,4 +1,4 @@
-name: Build Resume into pdf from .tex file
+name: Build Resume into pdf and docx
 
 on:
   push:
@@ -7,6 +7,7 @@ on:
 
 permissions:
   contents: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -17,17 +18,28 @@ jobs:
         with:
           fetch-depth: 0
 
+      # 1. Generate the PDF (Existing Step)
       - name: Set up LaTeX environment
         uses: xu-cheng/latex-action@v2
         with:
           root_file: resume.tex
-      
-      - name: Push PDF to pdf-output branch
+
+      # 2. Install Pandoc (New Step)
+      - name: Install Pandoc
+        run: sudo apt-get update && sudo apt-get install -y pandoc
+
+      # 3. Convert LaTeX to Word (New Step)
+      - name: Convert to Word (.docx)
+        run: pandoc resume.tex -o resume.docx
+
+      # 4. Push both files (Updated Step)
+      - name: Push PDF and Docx to pdf-output branch
         uses: stefanzweifel/git-auto-commit-action@v4
         with:
-          commit_message: Update resume PDF
+          commit_message: Update resume PDF and DOCX
           branch: pdf-output
-          file_pattern: resume.pdf
+          # Added resume.docx to the file pattern
+          file_pattern: resume.pdf resume.docx
           create_branch: true
           commit_user_name: github-actions[bot]
           commit_user_email: 41898282+github-actions[bot]@users.noreply.github.com
