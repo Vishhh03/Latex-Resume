@@ -19,9 +19,6 @@ jobs:
         uses: xu-cheng/latex-action@v2
         with:
           root_file: resume.tex
-
-      - name: Move PDF to root
-        run: mv resume.pdf ./resume.pdf
       
       - name: Push PDF to pdf-output branch
         uses: stefanzweifel/git-auto-commit-action@v4
