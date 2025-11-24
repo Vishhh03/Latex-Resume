@@ -11,11 +11,11 @@
 \usepackage[a4paper, top=1.5cm, bottom=1.5cm, left=1.8cm, right=1.8cm]{geometry} 
 \usepackage{hyperref} % For clickable links
 
-% --- PERSONAL INFORMATION (from your JSON 'basics') ---
+% --- PERSONAL INFORMATION ---
 \name{Vishal}{Shaji}
-\title{Cloud \& DevOps Engineer} % Escaped the '&'
+\title{Cloud \& DevOps Engineer} 
 
-\address{Kochi, India}{} % Address
+\address{Kochi, India}{} 
 \phone[mobile]{+91 7306997081}
 \email{vishshaji03@gmail.com}
 
@@ -38,24 +38,24 @@
 
 \makecvtitle % Creates the header with your name and info
 
-% --- Summary (from 'basics.summary') ---
+% --- Summary ---
 \quote{\small\textit{"To build a career in DevOps where I can combine my passion for automation, cloud systems, and modern deployment workflows to deliver scalable, efficient, and resilient infrastructure."}}
 
-% --- Experience (from 'work') ---
+% --- Experience ---
 \section{Experience}
 
 \cventry
-  {July 2025 --  Present} % Dates
+  {July 2025 -- Present} % Dates
   {Programmer Analyst Trainee} % Position
   {Cognizant Technology Solutions (CTS)} % Company
   {Chennai, India} % Location
   {} % Grade/Score (empty)
   {Led a 5-member team developing and modernizing a full-stack web platform while integrating DevOps practices.
   \begin{itemize}%
-    \item Led a 5-member team in building the Smart Hotel Management System (Angular + .NET + SQL Server).
+    \item Developed Smart Hotel Management System (Angular + .NET + SQL Server).
     \item Performed primary pull request reviews and maintained the remote Git repository.
-    \item Containerized the application using Docker and implemented Github Actions-based CI/CD pipelines for AWS EC2.
-    \item Integrated Prometheus \& Grafana for live monitoring and Kibana for log management.
+    \item Containerized the application using Docker and implemented Github Actions-based CI/CD pipeline.
+    \item Integrated Prometheus \& Grafana for live monitoring and ELK Stack for log management.
   \end{itemize}}
 
 \vspace{2mm} % Added space between job entries
@@ -63,17 +63,17 @@
 \cventry
   {Jan 2025 -- June 2025} % Dates
   {Tech Consultant (Intern)} % Position
-  {Bomaku Constructions} % Company
-  {Kochi, India} % Location
+  {Bommaku Constructions} % Company
+  {Hyderabad, India} % Location
   {} % Grade/Score (empty)
   {Supported the company's digital transformation and modernization through web, cloud, and visualization solutions.
   \begin{itemize}%
     \item Optimized website performance and provided UI/UX enhancement suggestions.
-    \item Introduced Unreal Engine 5 for architectural visualization of construction projects.
+    \item Designed Unreal Engine 5 architectural visualization for construction projects.
     \item Guided the management team on adopting cloud technologies for operational efficiency.
   \end{itemize}}
 
-% --- Projects (from 'projects') ---
+% --- Projects ---
 \section{Projects}
 
 \cventry
@@ -84,11 +84,11 @@
   {} % Grade/Score (empty)
   {A web-based platform for hosting and managing Minecraft servers using AWS EC2 and Lambda.
   \begin{itemize}%
-    \item Developed React-based frontend for server lifecycle control (start/stop/terminate).
-    \item Automated backend workflows via AWS Lambda, IAM, and DynamoDB.
+    \item Developed Next.js application with a full serverless backend architecture.
+    \item Automated backend workflows via AWS Lambda, IAM, DynamoDB, and Cognito for authentication.
     \item Implemented CloudWatch dashboards for instance uptime and cost monitoring.
   \end{itemize}
-  \textit{Live Site: \url{idhafortkochi.com}}}
+  \textit{Live Site: \url{www.idhafortkochi.com}}}
 
 \vspace{2mm} % Added space between project entries
 
@@ -101,12 +101,12 @@
   {Deployed a production-grade client website with automated build pipelines and CMS integration.
   \begin{itemize}%
     \item Built a responsive Next.js + Sanity CMS frontend for an art homestay business.
-    \item Set up CI/CD pipelines using GitHub Actions for deployment to AWS Amplify.
+    \item Set up CI/CD pipelines using GitHub Actions for deployment to Cloudflare.
     \item Configured Cloudflare CDN for performance optimization and SEO improvements.
   \end{itemize}
-  \textit{Live Site: \url{terraless.com}}}
+  \textit{Live Site: \url{www.terraless.com}}}
 
-% --- Education (from 'education') ---
+% --- Education ---
 \section{Education}
 
 \cventry
@@ -114,7 +114,7 @@
   {Bachelor of Technology (B.Tech) - Civil Engineering (Minor in ML)} % Degree
   {TOCH Institute of Science and Technology} % Institution
   {Kochi, India} % Location
-  {Score: 7.51 / 10} % Grade
+  {} % Grade
   {
   \begin{itemize}%
     \item Led ML-based civil data analysis (Kochi Metro Analysis) final year project.
@@ -128,17 +128,17 @@
   {} % Grade
   {} % Description
 
-% --- Technical Skills (from 'skills') ---
+% --- Technical Skills ---
 \section{Technical Skills}
 
-\cvitem{DevOps \& Cloud}{AWS (EC2, Lambda, IAM, S3, CloudWatch, ECS), Docker, Jenkins, Terraform, GitHub Actions, Prometheus, Grafana, ELK Stack}
-\cvitem{Programming}{Python, JavaScript, Bash, C\#, SQL}
-\cvitem{Web Development}{Angular, .NET Core, Next.js, Sanity CMS}
+\cvitem{DevOps \& Cloud}{AWS (EC2, Lambda, IAM, S3, CloudWatch, ECS, SNS, Cognito), Docker, Jenkins, Terraform, GitHub Actions, Prometheus, Grafana, ELK Stack, Bash Scripting}
+\cvitem{Programming}{Python, JavaScript, C\#, SQL}
+\cvitem{Web Development}{Angular, .NET Core, Next.js, React, FastAPI, Headless CMS, Cloudflare, DNS Configuration}
 \cvitem{Databases}{PostgreSQL, SQL Server, DynamoDB, MongoDB, RDS}
 \cvitem{Version Control}{Git, GitHub}
-\cvitem{Operating Systems}{Linux (Ubuntu, Amazon Linux), Windows}
+\cvitem{Operating Systems}{Linux (Ubuntu, Amazon Linux)}
 
-% --- Certificates (from 'certificates') ---
+% --- Certificates ---
 \section{Certifications}
 
 \cvitem{2024}{AWS Certified Cloud Practitioner}
