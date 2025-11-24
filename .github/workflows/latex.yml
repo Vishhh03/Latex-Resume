@@ -26,5 +26,7 @@ jobs:
           commit_message: Update resume PDF
           branch: pdf-output
           file_pattern: resume.pdf
-          author_name: github-actions
-          author_email:
+          create_branch: true
+          commit_user_name: github-actions[bot]
+          commit_user_email: 41898282+github-actions[bot]@users.noreply.github.com
+          commit_author: github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>
