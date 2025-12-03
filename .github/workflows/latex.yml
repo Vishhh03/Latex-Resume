@@ -10,31 +10,31 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
         with:
           fetch-depth: 0
 
-      # 1. Generate PDF
+      # 1. Generate PDF using LaTeX
       - name: Build PDF with LaTeX
         uses: xu-cheng/latex-action@v2
         with:
           root_file: resume.tex
 
-      # 2. Install full LibreOffice (needed for PDF → DOCX)
-      - name: Install Full LibreOffice Suite
+      # 2. Install unoconv + LibreOffice
+      - name: Install unoconv and LibreOffice
         run: |
           sudo apt-get update
-          sudo apt-get install -y libreoffice libreoffice-writer libreoffice-draw libreoffice-core libreoffice-common
+          sudo apt-get install -y unoconv libreoffice
 
-      # 3. Convert PDF → DOCX
+      # 3. Convert PDF → DOCX (this WILL work)
       - name: Convert PDF to DOCX
-        run: libreoffice --headless --convert-to docx --outdir . resume.pdf
+        run: unoconv -f docx resume.pdf
 
-      # 4. Push artifacts
-      - name: Push PDF and DOCX
+      # 4. Push both files
+      - name: Push PDF and DOCX to pdf-output branch
         uses: stefanzweifel/git-auto-commit-action@v4
         with:
           commit_message: Update resume PDF and DOCX
