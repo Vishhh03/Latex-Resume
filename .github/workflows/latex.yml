@@ -3,30 +3,36 @@ on:
   push:
     branches:
       - main
+
 permissions:
   contents: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
-    # Workflow Steps
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
         with:
           fetch-depth: 0
+
       # 1. Generate the PDF
       - name: Set up LaTeX environment
         uses: xu-cheng/latex-action@v2
         with:
           root_file: resume.tex
+
       # 2. Install Pandoc
       - name: Install Pandoc
         run: sudo apt-get update && sudo apt-get install -y pandoc
-      # 3. Convert LaTeX to Word
-      - name: Convert to Word (.docx)
-        run: pandoc resume.tex -o resume.docx
-      # 4. Push both files
-      - name: Push PDF and Docx to pdf-output branch
+
+      # 3. Convert PDF → DOCX (instead of TEX → DOCX)
+      - name: Convert PDF to Word (.docx)
+        run: pandoc resume.pdf -o resume.docx
+
+      # 4. Push both files to pdf-output branch
+      - name: Push PDF and DOCX to pdf-output branch
         uses: stefanzweifel/git-auto-commit-action@v4
         with:
           commit_message: Update resume PDF and DOCX
