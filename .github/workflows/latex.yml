@@ -10,38 +10,35 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
-
+    
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
         with:
           fetch-depth: 0
 
-      # 1. Generate the PDF from LaTeX
+      # 1. Generate PDF
       - name: Build PDF with LaTeX
         uses: xu-cheng/latex-action@v2
         with:
           root_file: resume.tex
 
-      # 2. Install LibreOffice (for PDF → DOCX)
-      - name: Install LibreOffice
-        run: sudo apt-get update && sudo apt-get install -y libreoffice
+      # 2. Install full LibreOffice (needed for PDF → DOCX)
+      - name: Install Full LibreOffice Suite
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libreoffice libreoffice-writer libreoffice-draw libreoffice-core libreoffice-common
 
       # 3. Convert PDF → DOCX
       - name: Convert PDF to DOCX
-        run: libreoffice --headless --convert-to docx resume.pdf
+        run: libreoffice --headless --convert-to docx --outdir . resume.pdf
 
-      # LibreOffice outputs file as resume.docx in current directory
-
-      # 4. Push both files to pdf-output branch
-      - name: Push PDF and DOCX to pdf-output branch
+      # 4. Push artifacts
+      - name: Push PDF and DOCX
         uses: stefanzweifel/git-auto-commit-action@v4
         with:
           commit_message: Update resume PDF and DOCX
           branch: pdf-output
           file_pattern: resume.pdf resume.docx
           create_branch: true
-          commit_user_name: github-actions[bot]
-          commit_user_email: 41898282+github-actions[bot]@users.noreply.github.com
-          commit_author: github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>
           push_options: '--force'
