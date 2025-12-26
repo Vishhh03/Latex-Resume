@@ -9,7 +9,7 @@ except Exception as e:
     print(f"Error initializing Bedrock client: {e}")
     bedrock = None
 
-MODEL_ID = "meta.llama3-70b-instruct-v1:0" 
+MODEL_ID = "llama-4-scout" 
 
 def generate_latex_update(current_latex, user_request):
     """
