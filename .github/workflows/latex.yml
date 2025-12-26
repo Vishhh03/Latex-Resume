@@ -16,17 +16,21 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
         with:
-          fetch-depth: 0
+          fetch-depth: 1
 
-      # 1. Generate the PDF (Existing Step)
-      - name: Set up LaTeX environment
-        uses: xu-cheng/latex-action@v2
+
+      # 1. Setup Tectonic (Faster LaTeX Compiler)
+      - name: Setup Tectonic
+        uses: wtfjoke/setup-tectonic@v1
         with:
-          root_file: resume.tex
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Run Tectonic
+        run: tectonic resume.tex
 
       # 2. Install Pandoc (New Step)
       - name: Install Pandoc
-        run: sudo apt-get update && sudo apt-get install -y pandoc
+        run: sudo apt-get install -y pandoc
 
       # 3. Convert LaTeX to Word (New Step)
       - name: Convert to Word (.docx)
