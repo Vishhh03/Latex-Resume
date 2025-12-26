@@ -1,4 +1,5 @@
-name: Build Resume into pdf and docx
+
+name: Build Resume into PDF and DOCX
 
 on:
   push:
@@ -16,32 +17,37 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
         with:
-          fetch-depth: 0
 
-      # 1. Generate the PDF (Existing Step)
-      - name: Set up LaTeX environment
-        uses: xu-cheng/latex-action@v2
+          fetch-depth: 1
+
+      # 1. Install FUSE (Required for Tectonic AppImage)
+      - name: Install libfuse2
+        run: sudo apt-get install -y libfuse2
+
+      # 2. Setup Tectonic (Faster LaTeX Compiler)
+      - name: Setup Tectonic
+        uses: wtfjoke/setup-tectonic@v1
         with:
-          root_file: resume.tex
+          github-token: ${{ secrets.GITHUB_TOKEN }}
 
-      # 2. Install Pandoc (New Step)
+      - name: Run Tectonic
+        run: tectonic resume.tex
+
+      # 2. Install Pandoc
       - name: Install Pandoc
-        run: sudo apt-get update && sudo apt-get install -y pandoc
+        run: sudo apt-get install -y pandoc
 
-      # 3. Convert LaTeX to Word (New Step)
+      # 3. Convert LaTeX to Word
       - name: Convert to Word (.docx)
         run: pandoc resume.tex -o resume.docx
 
-      # 4. Push both files (Updated Step)
-      - name: Push PDF and Docx to pdf-output branch
+      # 4. Push both files
+      - name: Push PDF and DOCX to pdf-output branch
         uses: stefanzweifel/git-auto-commit-action@v4
         with:
           commit_message: Update resume PDF and DOCX
           branch: pdf-output
-          # Added resume.docx to the file pattern
+
           file_pattern: resume.pdf resume.docx
           create_branch: true
-          commit_user_name: github-actions[bot]
-          commit_user_email: 41898282+github-actions[bot]@users.noreply.github.com
-          commit_author: github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>
           push_options: '--force'
