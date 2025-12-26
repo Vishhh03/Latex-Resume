@@ -1,0 +1,90 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  AI Resume Editor - Serverless Pipeline using Bedrock, Lambda and Step Functions.
+
+Parameters:
+  GitHubToken:
+    Type: String
+    Description: GitHub Personal Access Token
+    NoEcho: true
+  GitHubRepo:
+    Type: String
+    Description: Repository name (e.g., username/repo)
+    Default: Vishhh03/Latex-Resume # Update this default or pass in deploy
+
+Globals:
+  Function:
+    Timeout: 60
+    MemorySize: 512
+    Handler: handlers.lambda_handler
+    Runtime: python3.9
+    Environment:
+      Variables:
+        GITHUB_TOKEN: !Ref GitHubToken
+        GITHUB_REPO: !Ref GitHubRepo
+
+Resources:
+  # --- API Gateway ---
+  ResumeApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: Prod
+
+  # --- Step Function ---
+  ResumeStateMachine:
+    Type: AWS::Serverless::StateMachine
+    Properties:
+      DefinitionUri: statemachine/resume_workflow.asl.json
+      DefinitionSubstitutions:
+        FetchResumeFunctionArn: !GetAtt FetchResumeFunction.Arn
+        GenerateDiffFunctionArn: !GetAtt GenerateDiffFunction.Arn
+        CommitUpdateFunctionArn: !GetAtt CommitUpdateFunction.Arn
+      Policies:
+        - LambdaInvokePolicy:
+            FunctionName: !Ref FetchResumeFunction
+        - LambdaInvokePolicy:
+            FunctionName: !Ref GenerateDiffFunction
+        - LambdaInvokePolicy:
+            FunctionName: !Ref CommitUpdateFunction
+      Events:
+        ApiTrigger:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ResumeApi
+            Path: /update
+            Method: POST
+
+  # --- Lambda Functions ---
+  FetchResumeFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: lambda_src/
+      Handler: handlers.fetch_resume
+      Policies:
+        - Statement:
+            - Effect: Allow
+              Action: [ "ssm:GetParameter" ] 
+              Resource: "*" # Scope down in prod
+
+  GenerateDiffFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: lambda_src/
+      Handler: handlers.generate_diff
+      Policies:
+        - Statement:
+            - Effect: Allow
+              Action: [ "bedrock:InvokeModel" ]
+              Resource: "*" # Scope down to specific model ARN if needed
+
+  CommitUpdateFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: lambda_src/
+      Handler: handlers.commit_update
+
+Outputs:
+  ApiUrl:
+    Description: "API Gateway endpoint URL"
+    Value: !Sub "https://${ResumeApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/update"

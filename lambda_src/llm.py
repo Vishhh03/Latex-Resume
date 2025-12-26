@@ -1,0 +1,88 @@
+import boto3
+import json
+import os
+
+# Initialize Bedrock client
+try:
+    bedrock = boto3.client(service_name='bedrock-runtime', region_name='us-east-1')
+except Exception as e:
+    print(f"Error initializing Bedrock client: {e}")
+    bedrock = None
+
+MODEL_ID = "llama-4-scout" 
+
+def get_latex_patches(current_latex, user_request):
+    """
+    Sends the current LaTeX and user request to Llama 4 Scout on Bedrock
+    and returns a list of search/replace patches in JSON format.
+    """
+    if not bedrock:
+        raise Exception("Bedrock client is not initialized.")
+
+    prompt = f"""
+    <|begin_of_text|><|start_header_id|>system<|end_header_id|>
+    You are an expert LaTeX developer. Your job is to modify a LaTeX resume based on the user's natural language request.
+    
+    IMPORTANT: You must NOT return the full file. You must return a list of SEARCH and REPLACE blocks in JSON format.
+    The goal is to modify the file by finding exact unique text blocks and replacing them.
+    
+    RULES:
+    1. Output strictly a valid JSON list of objects.
+    2. Each object must have "search" and "replace" keys.
+    3. 'search': A unique block of text from the original file that needs to be replaced. MUST MATCH EXACTLY (whitespace, indentation).
+    4. 'replace': The new text that will replace the 'search' block.
+    5. Include enough context in 'search' to ensure it is unique.
+    6. Minimum indentation and formatting must be preserved or intentionally updated in 'replace'.
+    
+    Example Output:
+    [
+        {{
+            "search": "\\\\name{Old}{Name}",
+            "replace": "\\\\name{New}{Name}"
+        }}
+    ]
+
+    <|eot_id|><|start_header_id|>user<|end_header_id|>
+    Current LaTeX Resume:
+    {current_latex}
+    
+    User Request:
+    {user_request}
+    
+    Output the JSON patches:
+    <|eot_id|><|start_header_id|>assistant<|end_header_id|>
+    """
+
+    body = json.dumps({
+        "prompt": prompt,
+        "max_gen_len": 2048,
+        "temperature": 0.0, # Low temperature for precision
+        "top_p": 0.9,
+    })
+
+    try:
+        response = bedrock.invoke_model(
+            body=body,
+            modelId=MODEL_ID,
+            accept='application/json',
+            contentType='application/json'
+        )
+        
+        response_body = json.loads(response.get('body').read())
+        output_text = response_body.get('generation').strip()
+        
+        # Cleanup if the model output markdown code blocks
+        if "```json" in output_text:
+            output_text = output_text.split("```json")[1].split("```")[0].strip()
+        elif "```" in output_text:
+             output_text = output_text.replace("```", "").strip()
+             
+        patches = json.loads(output_text)
+        return patches
+
+    except json.JSONDecodeError:
+        print(f"Failed to decode JSON from model output: {output_text}")
+        raise Exception("Model did not return valid JSON.")
+    except Exception as e:
+        print(f"Error invoking Bedrock model: {e}")
+        raise e
