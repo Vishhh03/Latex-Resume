@@ -7,21 +7,19 @@
 \moderncvstyle{banking}
 \moderncvcolor{blue}
 
-% ---- Geometry (safe ATS limits) ----
+% ---- Geometry (ATS-safe) ----
 \usepackage[a4paper, top=1.5cm, bottom=1.5cm, left=1.8cm, right=1.8cm]{geometry}
 
-% ---- Allow flexible page bottoms (IMPORTANT) ----
+% ---- Allow flexible bottom (prevents forced page break) ----
 \raggedbottom
 
-% ---- Global spacing control ----
+% ---- Global spacing (safe) ----
 \AtBeginDocument{
   \setlength{\parskip}{0pt}
   \setlength{\itemsep}{1.5pt}
   \setlength{\parsep}{0pt}
   \setlength{\topsep}{2pt}
 }
-
-\setlength{\cvitemsep}{0.3em}
 
 % ---- Personal Info ----
 \name{Vishal}{Shaji}
@@ -34,6 +32,9 @@
 
 % ================================
 \begin{document}
+
+% ---- NOW cvitemsep EXISTS (IMPORTANT) ----
+\setlength{\cvitemsep}{0.3em}
 
 \hypersetup{
   colorlinks=true,
@@ -151,7 +152,7 @@ Production-grade on-demand game server hosting platform reducing costs by 90\%.
 % ================================
 \section{Certifications}
 
-% Force LaTeX to use remaining space on page
+% Force usage of remaining space (safe)
 \enlargethispage{2\baselineskip}
 
 \cvitem{}{
