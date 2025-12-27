@@ -76,21 +76,21 @@
     \item Designed Unreal Engine 5 architectural visualization for construction projects.
     \item Guided the management team on adopting cloud technologies for operational efficiency.
   \end{itemize}}
-
 % --- Projects ---
 \section{Projects}
 
 \cventry
   {} % Dates (empty)
   {Cloud DevOps Live Project} % Project Name
-  {Minecraft Server Hosting Platform} % Company (empty)
+  {TerraLess - Stateless Server Hosting} % Company
   {} % Location (empty)
   {} % Grade/Score (empty)
-  {A web-based platform for hosting and managing Minecraft servers using AWS EC2 and Lambda.
+  {A production-grade platform for on-demand game server hosting, reducing costs by 90\% via ephemeral architecture.
   \begin{itemize}%
-    \item Developed Next.js application with a full serverless backend architecture.
-    \item Automated backend workflows via AWS Lambda, IAM, DynamoDB, and Cognito for authentication.
-    \item Implemented CloudWatch dashboards for instance uptime and cost monitoring.
+    \item Architected a "Stateless" computing model using **Hetzner Cloud** and **Btrfs** snapshots to decouple data from compute.
+    \item Developed a modern **Next.js** frontend with **AWS Amplify** authentication, featuring real-time cost transparency.
+    \item Automated complex lifecycle workflows (Provision $\rightarrow$ Rehydrate $\rightarrow$ Snapshot $\rightarrow$ Destroy) using **Bash** and Cloud APIs.
+    \item Integrating **NVMe** storage with **Storage Box** for instant, atomic offsite backups and 1TB+ data retention.
   \end{itemize}
   \textit{Live Site: \url{www.terraless.com}}}
 
@@ -99,7 +99,7 @@
 \cventry
   {} % Dates (empty)
   {Client Website Deployment (Next.js + Sanity CMS)} % Project Name
-  {Idha Art Stay} % Company (empty)
+  {Idha Art Stay} % Company
   {} % Location (empty)
   {} % Grade/Score (empty)
   {Deployed a production-grade client website with automated build pipelines and CMS integration.
