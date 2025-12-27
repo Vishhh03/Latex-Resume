@@ -110,45 +110,158 @@
 \textit{Live: \url{https://www.idhafortkochi.com}}
 }
 
-% ==========================
+
+% A complete, runnable LaTeX document for your resume
+% This uses the moderncv class to create a clean, one-page layout.
+
+% --- PREAMBLE ---
+\documentclass[10pt, a4paper, sans]{moderncv} % Set base font size to 10pt
+\moderncvstyle{banking} % 'banking' theme
+\moderncvcolor{blue}    % You can change this to 'green', 'orange', 'red', etc.
+
+% --- GEOMETRY ---
+% Reduced margins to fit content on one page
+\usepackage[a4paper, top=1.5cm, bottom=1.5cm, left=1.8cm, right=1.8cm]{geometry} 
+
+
+% --- PERSONAL INFORMATION ---
+\name{Vishal}{Shaji}
+\title{Cloud \& DevOps} 
+
+% CHANGE 1: Added \vspace{2.5mm} here to push the address down away from the Title
+\address{\vspace{2.5mm}Kochi, India}{} 
+\phone[mobile]{+91 7306997081}
+\email{vishshaji03@gmail.com}
+
+% Social links
+\social[linkedin]{VishalShaji}
+\social[github]{Vishhh03}
+
+
+
+% --- THE DOCUMENT BEGINS ---
+\begin{document}
+
+% Configure hyperref for nice \url{} links
+\hypersetup{
+    colorlinks=true,
+    linkcolor=black,
+    filecolor=black,      
+    urlcolor=blue, % Make URLs blue and clickable
+    pdftitle={Vishal Shaji - Resume},
+    pdfpagemode=FullScreen,
+}
+
+\makecvtitle % Creates the header with your name and info
+
+% CHANGE 2: Added negative space here to pull the Experience section UP
+% Adjust -10mm to -5mm or -15mm to change the tightness
+\vspace*{-10mm}
+
+% --- Experience ---
+\section{Experience}
+
+\cventry
+  {July 2025 -- Present} % Dates
+  {Programmer Analyst Trainee} % Position
+  {Cognizant Technology Solutions (CTS)} % Company
+  {Chennai, India} % Location
+  {} % Grade/Score (empty)
+  {
+    \begin{itemize}%
+  \item Led a 5-member team developing a Smart Hotel Management System (Angular, .NET, SQL Server).
+  \item Containerized the application using Docker and built GitHub Actions CI/CD pipelines.
+  \item Integrated Prometheus, Grafana, and ELK Stack for live monitoring and log management.
+  \item Performed primary pull request reviews and maintained Git-based version control.
+  \end{itemize}}
+
+\vspace{2mm} % Added space between job entries
+
+\cventry
+  {Jan 2025 -- June 2025} % Dates
+  {Tech Consultant (Intern)} % Position
+  {Bommaku Constructions} % Company
+  {Hyderabad, India} % Location
+  {} % Grade/Score (empty)
+  {Supported the company's digital transformation and modernization through web, cloud, and visualization solutions.
+  \begin{itemize}%
+    \item Optimized website performance and provided UI/UX enhancement suggestions.
+    \item Designed Unreal Engine 5 architectural visualization for construction projects.
+    \item Guided the management team on adopting cloud technologies for operational efficiency.
+  \end{itemize}}
+% --- Projects ---
+\section{Projects}
+
+\cventry
+  {} % Dates (empty)
+  {Cloud DevOps Live Project} % Project Name
+  {TerraLess - Stateless Server Hosting} % Company
+  {} % Location (empty)
+  {} % Grade/Score (empty)
+  {
+  \begin{itemize}%
+    \item Production-grade on-demand game server hosting platform reducing costs by 90\%.
+    \item Architected stateless compute using Hetzner Cloud with Btrfs snapshots.
+    \item Built Next.js frontend with AWS Cognito authentication and cost transparency.
+    \item Automated lifecycle workflows using Bash and cloud APIs.
+    \item Integrated NVMe with Storage Box for atomic offsite backups and long-term retention.
+  \end{itemize}
+  \textit{Live Site: \url{www.terraless.com}}}
+
+\vspace{2mm} % Added space between project entries
+
+\cventry
+  {} % Dates (empty)
+  {Client Website Deployment (Next.js + Sanity CMS)} % Project Name
+  {Idha Art Stay} % Company
+  {} % Location (empty)
+  {} % Grade/Score (empty)
+  {
+  \begin{itemize}%
+    \item Deployed a production-grade client website with automated CI/CD pipelines.
+    \item Built responsive Next.js frontend with Sanity CMS.
+    \item Deployed via GitHub Actions with Cloudflare CDN and SEO optimization.
+  \end{itemize}
+  \textit{Live Site: \url{www.idhafortkochi.com}}}
+
+% --- Education ---
 \section{Education}
 
 \cventry
-{2019 -- 2023}
-{B.Tech – Civil Engineering (Minor in Machine Learning)}
-{TOCH Institute of Science and Technology}
-{Kochi, India}
-{}
-{
-\begin{itemize}\setlength{\itemsep}{1.5pt}
-  \item Final year project on Kochi Metro Network analysis using Machine Learning.
-\end{itemize}
-}
+  {2019 -- 2023} % Dates
+  {Bachelor of Technology (B.Tech) - Civil Engineering (Minor in Machine Learning)} % Degree
+  {TOCH Institute of Science and Technology} % Institution
+  {Kochi, India} % Location
+  {} % Grade
+  {
+  \begin{itemize}%
+    \item Led Machine Learning-based civil data analysis (Kochi Metro Analysis) final year project.
+  \end{itemize}}
 
 \cventry
-{2017 -- 2019}
-{Higher Secondary Education}
-{Gregorian Public School}
-{Kochi, India}
-{}
-{}
+  {2017 -- 2019} % Dates
+  {Higher Secondary Education - Computer Science Stream} % Degree
+  {Gregorian Public School} % Institution
+  {Kochi, India} % Location
+  {} % Grade
+  {} % Description
 
-% ==========================
+% --- Technical Skills ---
 \section{Technical Skills}
 
-\cvitem{DevOps \& Cloud}{AWS (EC2, Lambda, IAM, S3, CloudWatch, ECS, SNS, Cognito), Docker, Kubernetes, Jenkins, Terraform, GitHub Actions, Prometheus, Grafana, ELK Stack, Bash, Git}
+\cvitem{DevOps \& Cloud}{AWS (EC2, Lambda, IAM, S3, CloudWatch, ECS, SNS, Cognito), Docker, Kubernetes, Jenkins, Terraform, GitHub Actions, Prometheus, Grafana, ELK Stack, Bash Scripting, Git, GitHub}
 \cvitem{Programming}{Python, JavaScript, C\#, SQL}
-\cvitem{Web}{Angular, .NET Core, Next.js, React, FastAPI, Headless CMS, Cloudflare}
+\cvitem{Web Development}{Angular, .NET Core, Next.js, React, FastAPI, Headless CMS, Cloudflare, DNS Configuration}
 \cvitem{Databases}{PostgreSQL, SQL Server, DynamoDB, MongoDB, RDS}
-\cvitem{OS}{Linux (Ubuntu, Amazon Linux)}
+\cvitem{Operating Systems}{Linux (Ubuntu, Amazon Linux)}
 
-% ==========================
+% --- Certificates ---
 \section{Certifications}
 
 \cvitem{}{AWS Certified Cloud Practitioner}
 \cvitem{}{AWS Certified AI Practitioner}
-\cvitem{}{OCI Foundational Associate}
-\cvitem{}{OCI Foundational AI}
-\cvitem{}{OCI Associate Architect}
+\cvitem{}{Oracle Cloud Infrastructure (OCI) Foundational Associate}
+\cvitem{}{Oracle Cloud Infrastructure (OCI) Foundational AI}
+\cvitem{}{Oracle Cloud Infrastructure (OCI) Associate Architect}
 
 \end{document}
