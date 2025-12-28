@@ -2,14 +2,29 @@
 \moderncvstyle{banking}
 \moderncvcolor{blue}
 
-\usepackage[a4paper, top=1.5cm, bottom=1.5cm, left=1.8cm, right=1.8cm]{geometry}
+% --- GEOMETRY (tighter but safe) ---
+\usepackage[a4paper, top=1.3cm, bottom=1.3cm, left=1.6cm, right=1.6cm]{geometry}
+
+% --- SPACING FIXES ---
+\usepackage{setspace}
+\setlength{\hintscolumnwidth}{3cm}
+\setlength{\makecvtitlenamewidth}{10cm}
 \renewcommand{\labelitemi}{\textbullet}
 
-% --- PERSONAL INFORMATION ---
+% Reduce space before/after sections
+\usepackage{titlesec}
+\titlespacing*{\section}{0pt}{6pt}{4pt}
+
+% Reduce spacing in cvitem
+\makeatletter
+\renewcommand*{\cvitem}[3][.25em]{%
+  \cvline[#1]{#2}{#3\vspace{-2pt}}}
+\makeatother
+
+% --- PERSONAL INFO ---
 \name{Vishal}{Shaji}
 \title{DevOps / Cloud Engineer}
-
-\address{\vspace{2.5mm}Kochi, India}{}
+\address{\vspace{2mm}Kochi, India}{}
 \phone[mobile]{+91 7306997081}
 \email{vishshaji03@gmail.com}
 \social[linkedin]{VishalShaji}
@@ -18,52 +33,48 @@
 \begin{document}
 
 \hypersetup{
-    colorlinks=true,
-    urlcolor=blue,
-    pdftitle={Vishal Shaji - DevOps Resume},
+  colorlinks=true,
+  urlcolor=blue,
+  pdftitle={Vishal Shaji - DevOps Resume},
 }
 
 \makecvtitle
-\vspace*{-10mm}
+\vspace*{-8mm}
 
-% --- SUMMARY ---
+% --- SUMMARY (compressed to 1 line) ---
 \section{Summary}
-DevOps / Cloud Engineer with hands-on experience in AWS, Docker, Kubernetes, CI/CD pipelines,
-monitoring, and infrastructure automation. Built cost-efficient, highly available systems with
-measurable production impact.
+DevOps / Cloud Engineer with hands-on experience in AWS, Docker, Kubernetes, CI/CD, monitoring, and infrastructure automation.
 
 % --- EXPERIENCE ---
 \section{Experience}
 
 \cventry
-  {July 2025 -- Present}
+  {Jul 2025 -- Present}
   {Programmer Analyst Trainee}
-  {Cognizant Technology Solutions (CTS)}
+  {Cognizant Technology Solutions}
   {Chennai, India}
   {}
-  {
+  {\vspace{-2mm}
   \begin{itemize}\setlength{\itemsep}{2pt}
-    \item Built and deployed a multi-tier hotel management system using Angular, .NET, and SQL Server following enterprise DevOps workflows.
-    \item Containerized services using Docker and implemented CI/CD pipelines with GitHub Actions for automated build and deployment.
+    \item Built and deployed a multi-tier hotel management system using Angular, .NET, and SQL Server.
+    \item Containerized services using Docker and implemented CI/CD pipelines with GitHub Actions.
     \item Implemented monitoring and centralized logging using Prometheus, Grafana, and ELK Stack.
-    \item Maintained Git workflows and performed pull request reviews to ensure code quality and pipeline stability.
-  \end{itemize}
-  }
+    \item Maintained Git workflows and performed pull request reviews.
+  \end{itemize}}
 
-\vspace{2mm}
+\vspace{1mm}
 
 \cventry
-  {Jan 2025 -- June 2025}
+  {Jan 2025 -- Jun 2025}
   {Tech Consultant (Intern)}
   {Bommaku Constructions}
   {Hyderabad, India}
   {}
-  {
+  {\vspace{-2mm}
   \begin{itemize}\setlength{\itemsep}{2pt}
-    \item Advised management on adopting cloud-based workflows for real-time architectural demos and client presentations.
-    \item Designed Unreal Engine 5 architectural visualizations to support technical sales and stakeholder engagement.
-  \end{itemize}
-  }
+    \item Advised management on cloud-based workflows for real-time client demos.
+    \item Built Unreal Engine 5 architectural visualizations for stakeholder presentations.
+  \end{itemize}}
 
 % --- PROJECTS ---
 \section{Projects}
@@ -74,16 +85,16 @@ measurable production impact.
   {TerraLess -- Stateless Server Hosting}
   {}
   {}
-  {
+  {\vspace{-2mm}
   \begin{itemize}\setlength{\itemsep}{2pt}
-      \item Built a SaaS platform for self-hosted gaming servers on Hetzner Cloud using Docker and Linux, reducing infrastructure costs by 90 percent.
-      \item Engineered ephemeral storage and snapshot-based backups with freeze times under 0.1 seconds and near-zero I/O latency.
-      \item Designed disaster recovery workflows achieving a Recovery Time Objective under 60 seconds.
-      \item Implemented offsite replication using Hetzner Storage Box to achieve full data redundancy and high availability.
+    \item Built a SaaS platform on Hetzner Cloud using Docker and Linux, reducing costs by 90 percent.
+    \item Engineered snapshot-based backups with freeze times under 0.1 seconds.
+    \item Designed disaster recovery workflows with recovery time under 60 seconds.
+    \item Implemented offsite replication for full data redundancy.
   \end{itemize}
-  \textit{Live Site: \url{https://www.terraless.com}}}
+  \textit{\url{https://www.terraless.com}}}
 
-\vspace{2mm}
+\vspace{1mm}
 
 \cventry
   {}
@@ -91,12 +102,11 @@ measurable production impact.
   {Idha Art Stay}
   {}
   {}
-  {
+  {\vspace{-2mm}
   \begin{itemize}\setlength{\itemsep}{2pt}
-    \item Deployed and managed a production client website using Next.js, Sanity CMS, GitHub Actions, and Cloudflare CDN.
-    \item Implemented CI/CD pipelines, DNS configuration, and SEO optimization for reliable global delivery.
+    \item Deployed and managed a production website using Next.js, GitHub Actions, and Cloudflare CDN.
   \end{itemize}
-  \textit{Live Site: \url{https://www.idhafortkochi.com}}}
+  \textit{\url{https://www.idhafortkochi.com}}}
 
 % --- EDUCATION ---
 \section{Education}
@@ -107,37 +117,25 @@ measurable production impact.
   {TOCH Institute of Science and Technology}
   {Kochi, India}
   {}
-  {
+  {\vspace{-2mm}
   \begin{itemize}\setlength{\itemsep}{2pt}
-    \item Minor in Machine Learning.
-    \item Led a machine learning-based data analysis project focused on Kochi Metro network analytics.
-  \end{itemize}
-  }
-
-\cventry
-  {2017 -- 2019}
-  {Higher Secondary Education -- Computer Science}
-  {Gregorian Public School}
-  {Kochi, India}
-  {}
-  {}
+    \item Minor in Machine Learning; Kochi Metro network analytics project.
+  \end{itemize}}
 
 % --- TECHNICAL SKILLS ---
 \section{Technical Skills}
 
-\cvitem{DevOps \& Cloud}{AWS (EC2, Lambda, IAM, S3, CloudWatch, ECS, SNS, Cognito), Docker, Kubernetes, Terraform, GitHub Actions, Prometheus, Grafana, ELK Stack, Bash, Git}
+\cvitem{DevOps \& Cloud}{AWS (EC2, Lambda, IAM, S3, CloudWatch, ECS, Cognito), Docker, Kubernetes, Terraform, GitHub Actions, Prometheus, Grafana, ELK Stack, Bash, Git}
 \cvitem{Programming}{Python, JavaScript, C\#, SQL}
-\cvitem{Web \& APIs}{Angular, .NET Core, Next.js, React, FastAPI, Headless CMS}
+\cvitem{Web}{Angular, .NET Core, Next.js, React, FastAPI, Cloudflare}
 \cvitem{Databases}{PostgreSQL, SQL Server, DynamoDB, MongoDB, RDS}
-\cvitem{Operating Systems}{Linux (Ubuntu, Amazon Linux)}
+\cvitem{OS}{Linux (Ubuntu, Amazon Linux)}
 
 % --- CERTIFICATIONS ---
 \section{Certifications}
 
 \cvitem{}{AWS Certified Cloud Practitioner}
 \cvitem{}{AWS Certified AI Practitioner}
-\cvitem{}{Oracle Cloud Infrastructure (OCI) Associate Architect}
-\cvitem{}{Oracle Cloud Infrastructure (OCI) Foundational Associate}
-\cvitem{}{Oracle Cloud Infrastructure (OCI) Foundational AI}
+\cvitem{}{OCI Associate Architect}
 
 \end{document}
