@@ -1,0 +1,5 @@
+{
+    "bedrock_region": "us-east-1",
+    "model_id": "llama-4-scout",
+    "resume_filename": "resume.tex"
+}

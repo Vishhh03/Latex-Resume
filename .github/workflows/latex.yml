@@ -1,53 +1,71 @@
-
-name: Build Resume into PDF and DOCX
+name: Build Resume PDF
 
 on:
   push:
     branches:
       - main
+    paths:
+      - '**.tex'
+      - '.github/workflows/latex.yml'
 
 permissions:
   contents: write
 
+# Cancel in-progress runs when a new commit is pushed
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 5  # Prevent runaway jobs
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
 
           fetch-depth: 1
 
-      # 1. Install FUSE (Required for Tectonic AppImage)
+      # Cache Tectonic packages
+      - name: Cache Tectonic
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/Tectonic
+          key: tectonic-${{ runner.os }}-${{ hashFiles('resume.tex') }}
+          restore-keys: |
+            tectonic-${{ runner.os }}-
+
+      # Install FUSE (Required for Tectonic AppImage)
       - name: Install libfuse2
         run: sudo apt-get install -y libfuse2
 
-      # 2. Setup Tectonic (Faster LaTeX Compiler)
+      # Setup Tectonic (Faster LaTeX Compiler)
       - name: Setup Tectonic
-        uses: wtfjoke/setup-tectonic@v1
+        uses: wtfjoke/setup-tectonic@v3
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Run Tectonic
+      - name: Build PDF
         run: tectonic resume.tex
 
-      # 2. Install Pandoc
-      - name: Install Pandoc
-        run: sudo apt-get install -y pandoc
-
-      # 3. Convert LaTeX to Word
-      - name: Convert to Word (.docx)
-        run: pandoc resume.tex -o resume.docx
-
-      # 4. Push both files
-      - name: Push PDF and DOCX to pdf-output branch
-        uses: stefanzweifel/git-auto-commit-action@v4
-        with:
-          commit_message: Update resume PDF and DOCX
-          branch: pdf-output
-
-          file_pattern: resume.pdf resume.docx
-          create_branch: true
-          push_options: '--force'
+      # Push PDF to orphan branch (contains ONLY the PDF)
+      - name: Push PDF to pdf-output branch
+        run: |
+          # Save the PDF
+          cp resume.pdf /tmp/resume.pdf
+          
+          # Create orphan branch with only the PDF
+          git checkout --orphan pdf-output-temp
+          git rm -rf .
+          cp /tmp/resume.pdf resume.pdf
+          git add resume.pdf
+          
+          # Configure git and commit
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git commit -m "Update resume PDF"
+          
+          # Force push to pdf-output branch
+          git push origin pdf-output-temp:pdf-output --force

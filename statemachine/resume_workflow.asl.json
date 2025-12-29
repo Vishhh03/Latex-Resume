@@ -1,0 +1,34 @@
+{
+  "Comment": "A state machine that updates a resume based on user instruction",
+  "StartAt": "FetchResume",
+  "States": {
+    "FetchResume": {
+      "Type": "Task",
+      "Resource": "${FetchResumeFunctionArn}",
+      "ResultPath": "$.resume_data",
+      "Next": "GenerateDiff"
+    },
+    "GenerateDiff": {
+      "Type": "Task",
+      "Resource": "${GenerateDiffFunctionArn}",
+      "Parameters": {
+        "current_latex.$": "$.resume_data.content",
+        "instruction.$": "$.instruction"
+      },
+      "ResultPath": "$.diff_output",
+      "Next": "CommitUpdate"
+    },
+    "CommitUpdate": {
+      "Type": "Task",
+      "Resource": "${CommitUpdateFunctionArn}",
+      "Parameters": {
+        "patches.$": "$.diff_output.patches",
+        "conversation_id.$": "$.diff_output.conversation_id",
+        "current_latex.$": "$.resume_data.content",
+        "sha.$": "$.resume_data.sha",
+        "instruction.$": "$.instruction"
+      },
+      "End": true
+    }
+  }
+}
