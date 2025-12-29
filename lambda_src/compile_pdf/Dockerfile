@@ -2,9 +2,9 @@ FROM public.ecr.aws/lambda/python:3.12
 
 # Install Tectonic (LaTeX compiler)
 # Need curl, tar, gzip, and runtime libs like graphite2
-RUN yum install -y curl tar xz gzip graphite2 harfbuzz
-RUN curl --proto '=https' --tlsv1.2 -fsSL https://drop-sh.fullyjustified.net |sh
-RUN mv tectonic /usr/local/bin/
+RUN dnf install -y tar xz gzip fontconfig
+RUN curl -L https://github.com/tectonic-typesetting/tectonic/releases/download/tectonic%400.15.0/tectonic-0.15.0-x86_64-unknown-linux-musl.tar.gz | tar -xz -C /usr/local/bin/
+
 
 # Install python dependencies for local app (if needed)
 COPY requirements.txt .

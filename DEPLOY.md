@@ -1,88 +1,66 @@
-# Deploying the AI Resume Editor to AWS
+# Deployment Guide
 
-This guide outlines the steps to deploy the serverless resume editor to your AWS account.
+## 1. Local Development (FastAPI)
+For rapid development with instant preview and local file editing.
 
-## Prerequisites
+### Prerequisites
+- Python 3.9+
+- [Tectonic](https://tectonic-typesetting.github.io/) installed and in PATH.
+- AWS Credentials configured (for Bedrock access).
 
-1.  **AWS CLI**: Installed and configured with your credentials (`aws configure`).
-2.  **AWS SAM CLI**: Installed.
-3.  **Docker**: Running (required for building the Python Lambda functions).
-4.  **GitHub Token**: A Personal Access Token (classic) with `repo` scope.
-
-## Step 1: Enable Model Access
-
-Before deploying, ensure you have access to the **Qwen3 32B Instruct** model in AWS Bedrock.
-
-1.  Go to the [AWS Bedrock Console](https://console.aws.amazon.com/bedrock/home?region=us-east-1#/modelaccess).
-2.  Select **Model access** from the sidebar.
-3.  Click **enable specific models**.
-4.  Find **Qwen** or **Qwen3 32B Instruct** and check the box.
-5.  Click **Next** and submit the request. Access is usually granted instantly.
-
-## Step 2: Build the Application
-
-Build the serverless application container images and artifacts.
-
+### Run Local Server
 ```bash
-sam build --use-container
+cd local_server
+pip install -r requirements.txt
+uvicorn main:app --reload
 ```
+The API will be available at `http://localhost:8000`.
 
-*Note: `--use-container` is recommended to ensure the Python environment matches AWS Lambda.*
+## 2. Production Deployment (Terraform)
+For deploying the serverless infrastructure to AWS.
 
-## Step 3: Deploy
+### Prerequisites
+- [Terraform](https://www.terraform.io/) installed.
+- Docker installed (for building the compiler image).
 
-Deploy the application stack. You will be prompted for parameters.
+### Setup
+1. **Configure Secrets**:
+   Create a `terraform.tfvars` file with your GitHub credentials:
+   ```bash
+   cd terraform
+   echo 'github_token = "YOUR_GITHUB_TOKEN"' > terraform.tfvars
+   ```
 
-```bash
-sam deploy --guided
-```
+2. **Build & Push Docker Image**:
+   *You must do this partially first because the Lambda resource depends on the image existing.*
+   ```bash
+   terraform init
+   
+   # 1. Create ECR Repo Only (Use quotes for PowerShell compatibility)
+   terraform apply -target="aws_ecr_repository.resume_compiler"
 
-### Configuration Prompts:
+   
+   # 2. Login, Build, Push
+   # (Replace <ACCOUNT_ID> with your actual ID, get it via 'aws sts get-caller-identity')
+   aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin <ACCOUNT_ID>.dkr.ecr.us-east-1.amazonaws.com
+   
+   cd ../lambda_src/compile_pdf
+   docker build -t resume-compiler .
+   docker tag resume-compiler:latest <ACCOUNT_ID>.dkr.ecr.us-east-1.amazonaws.com/resume-compiler:latest
+   docker push <ACCOUNT_ID>.dkr.ecr.us-east-1.amazonaws.com/resume-compiler:latest
+   ```
 
-*   **Stack Name**: `resume-editor` (or your preference)
-*   **AWS Region**: `us-east-1` (Must match where Bedrock is available)
-*   **Parameter GitHubToken**: Paste your GitHub Personal Access Token (hidden input).
-*   **Parameter GitHubRepo**: `Vishhh03/Latex-Resume` (Adjust if different).
-*   **Confirm changes before deploy**: `y`
-*   **Allow SAM CLI IAM role creation**: `y`
-*   **Disable rollback**: `n`
-*   **Save arguments to configuration file**: `y`
+2. **Deploy Full Infrastructure**:
+   ```bash
+   cd ../../terraform
+   
+   # Create a variables file (terraform.tfvars)
+   echo 'github_token = "YOUR_TOKEN"' > terraform.tfvars
+   
+   # Apply everything
+   terraform apply
+   ```
 
-## Step 4: Verify
-
-Once deployed, SAM will output the **ApiUrl**.
-
-You can test the workflow by sending a POST request to that URL:
-
-```json
-POST /update
-{
-    "instruction": "Update my resume to emphasize my experience with AWS Lambda."
-}
-```
-
-## Step 5: Run the Web Frontend
-
-1.  Navigate to the `web` directory:
-    ```bash
-    cd web
-    ```
-2.  Create a `.env.local` file with your API URL:
-    ```bash
-    echo "NEXT_PUBLIC_API_URL=https://<your-api-id>.execute-api.us-east-1.amazonaws.com/Prod/update" > .env.local
-    ```
-3.  Install dependencies:
-    ```bash
-    npm install
-    ```
-4.  Run the development server:
-    ```bash
-    npm run dev
-    ```
-5.  Open [http://localhost:3000](http://localhost:3000) in your browser.
-
-### Deploying the Frontend
-
-You can deploy the `web` folder to **Vercel** or **AWS Amplify**.
-- **Vercel**: Import the repository, set the Root Directory to `web`, and add the `NEXT_PUBLIC_API_URL` environment variable.
-
+### Notes
+- The **Local Backend** edits `resume.tex` directly on your disk.
+- The **Production Backend** commits changes to GitHub.

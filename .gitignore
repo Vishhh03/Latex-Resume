@@ -26,3 +26,19 @@ Thumbs.db
 *.aux
 *.out
 *.synctex.gz
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.backup
+terraform.tfvars
+
+# Local Server
+temp_builds/
+local_history.json
+__pycache__/
+
+# Secrets
+.env.local
+.env
+LatexResume_credentials.csv

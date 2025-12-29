@@ -1,0 +1,3 @@
+github_token = "ghp_YOUR_TOKEN_HERE"
+github_repo  = "Vishhh03/Latex-Resume"
+aws_region   = "us-east-1"
