@@ -4,7 +4,7 @@ import os
 # Default values
 DEFAULT_CONFIG = {
     "bedrock_region": "us-east-1",
-    "model_id": "llama-4-scout",
+    "model_id": "qwen3-32b-instruct",
     "resume_filename": "resume.tex"
 }
 

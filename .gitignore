@@ -26,3 +26,35 @@ Thumbs.db
 *.aux
 *.out
 *.synctex.gz
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.backup
+terraform.tfvars
+
+# Local Server
+temp_builds/
+local_history.json
+__pycache__/
+
+# Secrets
+.env.local
+.env
+LatexResume_credentials.csv
+
+# Lambda Dependencies
+lambda_src/bin/
+lambda_src/boto*
+lambda_src/certifi*
+lambda_src/charset_normalizer*
+lambda_src/dateutil*
+lambda_src/docutils*
+lambda_src/idna*
+lambda_src/jmespath*
+lambda_src/requests*
+lambda_src/s3transfer*
+lambda_src/six*
+lambda_src/urllib3*
+lambda_src/*.dist-info/
+lambda_src/*.egg-info/

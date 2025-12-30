@@ -18,8 +18,11 @@ class GitHubClient:
             "Accept": "application/vnd.github.v3+json"
         }
 
-    def get_file_content(self, file_path=RESUME_FILENAME, branch="main"):
-        url = f"{self.base_url}/contents/{file_path}?ref={branch}"
+    def get_file_content(self, file_path=RESUME_FILENAME, branch="main", ref=None):
+        # ref takes precedence over branch if both provided
+        ref_param = ref if ref else branch
+        url = f"{self.base_url}/contents/{file_path}?ref={ref_param}"
+        
         response = requests.get(url, headers=self.headers)
         response.raise_for_status()
         
@@ -27,6 +30,21 @@ class GitHubClient:
         content = base64.b64decode(data['content']).decode('utf-8')
         sha = data['sha']
         return content, sha
+
+    def list_commits(self, file_path=RESUME_FILENAME, limit=10):
+        url = f"{self.base_url}/commits?path={file_path}&per_page={limit}"
+        response = requests.get(url, headers=self.headers)
+        response.raise_for_status()
+        
+        commits = []
+        for item in response.json():
+            commits.append({
+                "sha": item['sha'],
+                "message": item['commit']['message'],
+                "date": item['commit']['author']['date'],
+                "author": item['commit']['author']['name']
+            })
+        return commits
 
     def update_file(self, file_path, content, sha, message, branch="main"):
         url = f"{self.base_url}/contents/{file_path}"

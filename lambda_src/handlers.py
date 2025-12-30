@@ -62,9 +62,12 @@ def generate_diff(event, context):
         
     # Get history
     history = history_manager.get_history(conversation_id)
+    
+    # Get job description if provided
+    job_description = event.get('job_description')
 
     # Get patches from LLM
-    patches = get_latex_patches(current_latex, instruction, history)
+    patches = get_latex_patches(current_latex, instruction, history, job_description)
     
     # Save the turn to history
     # We save THE INSTRUCTION (User) and THE PATCHES (Assistant)
@@ -108,3 +111,86 @@ def commit_update(event, context):
         "new_sha": new_sha,
         "conversation_id": conversation_id
     }
+
+def get_history_handler(event, context):
+    """
+    Returns list of commits for the resume file.
+    Input: {} (GET /history)
+    """
+    try:
+        client = GitHubClient()
+        commits = client.list_commits()
+        return {
+            "statusCode": 200,
+            "headers": {
+                "Access-Control-Allow-Origin": "*",
+                "Content-Type": "application/json"
+            },
+            "body": json.dumps(commits)
+        }
+    except Exception as e:
+        return {
+            "statusCode": 500,
+            "body": json.dumps({"error": str(e)})
+        }
+
+def get_resume_handler(event, context):
+    """
+    Returns the raw content of the resume, optionally at a specific commit ref.
+    Input: queryStringParameters: { ref: "sha" } (GET /resume)
+    """
+    try:
+        ref = None
+        if event.get('queryStringParameters'):
+            ref = event['queryStringParameters'].get('ref')
+            
+        client = GitHubClient()
+        content, sha = client.get_file_content(RESUME_FILENAME, ref=ref)
+        
+        return {
+            "statusCode": 200,
+            "headers": {
+                "Access-Control-Allow-Origin": "*",
+                "Content-Type": "text/plain" 
+            },
+            "body": content
+        }
+    except Exception as e:
+        return {
+            "statusCode": 500,
+            "body": json.dumps({"error": str(e)})
+        }
+
+def save_resume_handler(event, context):
+    """
+    Saves raw LaTeX content to GitHub.
+    Input: body: { latex: "...", message: "Manual update" } (POST /save)
+    """
+    try:
+        body = json.loads(event.get('body', '{}'))
+        content = body.get('latex')
+        message = body.get('message', 'Manual update via Editor')
+        
+        if not content:
+            return {"statusCode": 400, "body": "Missing 'latex'"}
+
+        client = GitHubClient()
+        # 1. Get current SHA
+        _, sha = client.get_file_content(RESUME_FILENAME)
+        
+        # 2. Update file
+        result = client.update_file(RESUME_FILENAME, content, sha, message)
+        
+        return {
+            "statusCode": 200,
+            "headers": {
+                "Access-Control-Allow-Origin": "*",
+                "Content-Type": "application/json"
+            },
+            "body": json.dumps(result)
+        }
+    except Exception as e:
+        return {
+            "statusCode": 500,
+            "body": json.dumps({"error": str(e)})
+        }
