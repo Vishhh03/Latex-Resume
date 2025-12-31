@@ -1,8 +1,9 @@
-import os, time, threading, boto3, requests
+import os, time, threading, boto3, requests, json
 from fastapi import FastAPI, BackgroundTasks
 from contextlib import asynccontextmanager
 
 # Configuration
+S3_BUCKET = os.environ['STATE_BUCKET']
 IDLE_TIMEOUT = 600  # 10 minutes
 HOSTED_ZONE_ID = os.environ['HOSTED_ZONE_ID']
 DOMAIN_NAME = "api.resume.yourdomain.com"
