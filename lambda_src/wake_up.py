@@ -49,7 +49,7 @@ def handler(event, context):
                     }
                 }
             )
-            return {"status": "booting", "message": "Phantom Backend is waking up... Poll again in 10s"}
+            return {"status": "booting", "message": "Resume Backend is waking up... Poll again in 10s"}
         except Exception as e:
             return {"status": "error", "message": str(e)}
 

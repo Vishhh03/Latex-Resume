@@ -1,5 +1,5 @@
 variable "aws_region" { default = "us-east-1" }
-variable "tags" { default = { Project = "Phantom", ManagedBy = "Terraform" } }
+variable "tags" { default = { Project = "ResumeBackend", ManagedBy = "Terraform" } }
 
 # GitHub (For Persistence)
 variable "github_token" { sensitive = true }

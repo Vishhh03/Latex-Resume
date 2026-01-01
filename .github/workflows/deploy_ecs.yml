@@ -7,9 +7,9 @@ on:
 
 env:
   AWS_REGION: us-east-1
-  ECR_REPOSITORY: phantom-backend
-  ECS_SERVICE: phantom-service
-  ECS_CLUSTER: phantom-cluster
+  ECR_REPOSITORY: resume-backend
+  ECS_SERVICE: resume-service
+  ECS_CLUSTER: resume-cluster
   CONTAINER_NAME: backend
 
 jobs:

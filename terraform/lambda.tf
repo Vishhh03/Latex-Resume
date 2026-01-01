@@ -5,7 +5,7 @@ data "archive_file" "wakeup_zip" {
 }
 
 resource "aws_iam_role" "wakeup_role" {
-  name = "phantom_wakeup_role"
+  name = "resume_wakeup_role"
   assume_role_policy = jsonencode({
     Version = "2012-10-17", Statement = [{ Action = "sts:AssumeRole", Effect = "Allow", Principal = { Service = "lambda.amazonaws.com" } }]
   })
@@ -25,7 +25,7 @@ resource "aws_iam_role_policy" "wakeup_policy" {
 }
 
 resource "aws_lambda_function" "wakeup" {
-  function_name    = "phantom-wakeup"
+  function_name    = "resume-wakeup"
   role             = aws_iam_role.wakeup_role.arn
   handler          = "wake_up.handler"
   runtime          = "python3.12"

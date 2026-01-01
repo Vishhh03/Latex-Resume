@@ -9,7 +9,7 @@ export default function Home() {
 
   const wakeUp = async () => {
     setStatus('booting');
-    setMessage('Summoning Phantom...');
+    setMessage('Waking up Resume Backend...');
 
     const poll = setInterval(async () => {
       try {
@@ -42,12 +42,12 @@ export default function Home() {
   return (
     <div className="flex h-screen items-center justify-center bg-zinc-950 text-white">
       <div className="text-center">
-        <h1 className="mb-4 text-2xl font-bold">Phantom Status: {status}</h1>
+        <h1 className="mb-4 text-2xl font-bold">Backend Status: {status}</h1>
         <p className="mb-6 text-zinc-400">{message}</p>
 
         {status === 'idle' && (
           <button onClick={wakeUp} className="bg-white px-6 py-2 text-black rounded hover:bg-zinc-200 transition">
-            Wake Up Phantom
+            Wake Up Backend
           </button>
         )}
 

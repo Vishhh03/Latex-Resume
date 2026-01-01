@@ -23,7 +23,7 @@ const syncDNS = async () => {
       headers: { 'Authorization': `Bearer ${process.env.CF_API_TOKEN}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ content: ip.trim(), ttl: 60, proxied: false })
     });
-    console.log(`[Phantom] DNS updated to ${ip.trim()}`);
+    console.log(`[Resume] DNS updated to ${ip.trim()}`);
   } catch (e) {
     console.error("DNS Sync Failed:", e);
   }
@@ -221,7 +221,7 @@ async function commitToGit(msg: string) {
   const remote = `https://${process.env.GITHUB_TOKEN}@github.com/${process.env.REPO_OWNER}/${process.env.REPO_NAME}.git`;
 
   // Configure if not already (redundant but safe)
-  Bun.spawnSync(["git", "config", "user.email", "phantom@ai"]);
+  Bun.spawnSync(["git", "config", "user.email", "ai-writer@bot"]);
   Bun.spawnSync(["git", "config", "user.name", "Ghost Writer"]);
 
   // Check if remote exists, remove to be safe, set new
@@ -240,4 +240,4 @@ async function commitToGit(msg: string) {
 }
 
 syncDNS();
-console.log("Phantom Backend Listening on 8000");
+console.log("Resume Backend Listening on 8000");

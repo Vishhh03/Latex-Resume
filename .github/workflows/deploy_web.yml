@@ -12,8 +12,7 @@ jobs:
       - run: cd web && bun install && bun run build
         env:
           NEXT_PUBLIC_WAKE_UP_URL: ${{ secrets.WAKE_UP_URL }}
-          NEXT_PUBLIC_WAKE_UP_URL: ${{ secrets.WAKE_UP_URL }}
       - uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CF_API_TOKEN }}
-          command: pages deploy web/out --project-name=resume-phantom
+          command: pages deploy web/out --project-name=resume-web

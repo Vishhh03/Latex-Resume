@@ -1,5 +1,5 @@
 resource "aws_ecs_cluster" "main" {
-  name = "phantom-cluster"
+  name = "resume-cluster"
 }
 
 resource "aws_ecs_cluster_capacity_providers" "spot" {
@@ -12,13 +12,13 @@ resource "aws_ecs_cluster_capacity_providers" "spot" {
 }
 
 resource "aws_ecr_repository" "repo" {
-  name                 = "phantom-backend"
+  name                 = "resume-backend"
   image_tag_mutability = "MUTABLE"
   force_delete         = true
 }
 
 resource "aws_ecs_task_definition" "app" {
-  family                   = "phantom-task"
+  family                   = "resume-task"
   network_mode             = "awsvpc"
   requires_compatibilities = ["FARGATE"]
   cpu                      = 512
@@ -37,12 +37,12 @@ resource "aws_ecs_task_definition" "app" {
       { name = "GITHUB_TOKEN", value = var.github_token },
       { name = "REPO_OWNER",   value = var.repo_owner },
       { name = "REPO_NAME",    value = var.repo_name },
-      { name = "CLUSTER_NAME", value = "phantom-cluster" }
+      { name = "CLUSTER_NAME", value = "resume-cluster" }
     ]
     logConfiguration = {
       logDriver = "awslogs"
       options = {
-        "awslogs-group"         = "/ecs/phantom-task"
+        "awslogs-group"         = "/ecs/resume-task"
         "awslogs-region"        = var.aws_region
         "awslogs-stream-prefix" = "ecs"
       }
@@ -51,6 +51,6 @@ resource "aws_ecs_task_definition" "app" {
 }
 
 resource "aws_cloudwatch_log_group" "logs" {
-  name              = "/ecs/phantom-task"
+  name              = "/ecs/resume-task"
   retention_in_days = 7
 }

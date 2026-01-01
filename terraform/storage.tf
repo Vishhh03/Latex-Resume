@@ -1,5 +1,5 @@
 resource "aws_s3_bucket" "state" {
-  bucket_prefix = "phantom-state-"
+  bucket_prefix = "resume-state-"
   force_destroy = true # Good for personal projects
 }
 
