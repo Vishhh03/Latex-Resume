@@ -1,38 +1,75 @@
-# Autonomous Resume Infrastructure (AI-Latex-Editor)
+# Autonomous Resume Infrastructure
 
-I got tired of manually tweaking my resume for every job application, so I over-engineered a solution to do it for me.
+I got tired of manually tweaking my resume for every job application, so I engineered a solution to handle it.
 
-This isn't just a static PDF host. It's a **self-healing, serverless DevOps platform** that hosts my resume and lets an AI agent (Llama 3 on Bedrock) write LaTeX patches to update it in real-time.
+This is a self-healing, serverless platform that hosts my resume and uses an AI agent (Llama 3 on Bedrock) to generate LaTeX patches for real-time updates.
 
-**The flex?** It costs **$0.00/hr** when idle. It only spins up the backend when I actually talk to it.
+It costs **$0.00/hr** when nobody is using it.
 
-## The Architecture: "Wake-on-Demand"
+## Architecture Decisions
 
-I designed this to be dirt cheap but enterprise-grade.
+### Why AWS ECS Fargate Spot?
+Most people would just use a Lambda function. I chose Fargate Spot for two reasons:
+1.  **Dependencies**: The resume compiler (`tectonic`) represents a heavy Rust binary dependency. Packaging that into a Lambda Layer is painful and hits size limits fast. With Docker, I just `apt-get install` what I need.
+2.  **Cost**: Fargate Spot is dirt cheap (approx. 70% off standard pricing). Since this service only runs for a few minutes when I'm actively editing, Spot interruptions are irrelevant.
 
-1.  **Frontend**: Static Next.js site hosted on **Cloudflare Pages / Vercel**. Fast, free, global CDN.
-2.  **The "Guardian"**: A tiny Python Lambda function. It acts as a gatekeeper, checking my strict budget ($0.50/day hard limit) before allowing anything else to run.
-3.  **Backend**: An ephemeral **AWS Fargate Spot** container running `Bun`. It boots in seconds, pulls the latest resume from Git, applies AI edits, recompiles the LaTeX with Tectonic, and shuts itself down immediately after.
-4.  **AI Brain**: **Amazon Bedrock** (Llama 3 70B). It reads the raw LaTeX and generates precise JSON patches to update my experience bullet points without breaking the formatting.
+### Why Amazon Bedrock?
+I didn't want to manage OpenAI API keys in my frontend or worry about rate limits.
+Bedrock runs entirely inside my AWS VPC. There are no API keys to leak, and IAM roles handle the authentication. Plus, Llama 3 70B on Bedrock is strictly pay-per-token, making it significantly cheaper than a ChatGPT Plus subscription for this use case.
 
-## Tech Stack
-*   **Infrastructure**: Terraform (IaaC). One command deploys the entire stack (VPC, ECR, ECS, IAM, DynamoDB).
-*   **Compute**: AWS Lambda + ECS Fargate Spot.
-*   **Runtime**: Bun (TypeScript) for the API, Python for the Lambda.
-*   **Frontend**: Next.js + Tailwind.
-*   **Resume Engine**: LaTeX + Tectonic (Rust-based compiler).
+### How is it "Efficient"?
+The system uses a **Wake-on-Demand** pattern.
+1.  **Idle State**: The entire backend is dead. 0 Containers running. **Cost: $0**.
+2.  **Trigger**: When I hit the frontend, a tiny Lambda function (The "Wake Up" signal) checks if the backend is running.
+3.  **Boot**: If not, it provisions a Fargate Spot task. This takes about 45-60 seconds.
+4.  **Shutdown**: The backend has a "Guardian" middleware. If it detects 10 minutes of inactivity, it kills its own process and terminates the ECS task. **Return to Cost: $0**.
 
-## Deployment
+## Setup Guide
 
-Everything is automated via **GitHub Actions**.
+If you want to deploy this yourself, here is the exact process.
 
-*   **Frontend**: Pushing to `main` triggers a build on Cloudflare/Vercel.
-*   **Backend**: Pushing changes to `compute/` builds a new Docker image and pushes it to AWS ECR.
-*   **Application**: The backend pulls the latest `resume.tex` from this repo on startup, so I don't need to rebuild Docker images just to change a typo.
+### 1. Prerequisites
+*   **AWS Account**: You need admin access.
+*   **GitHub Account**: For hosting the code and kicking off Actions.
+*   **Terraform**: Installed locally to bootstrap the initial state (optional, can be done via CI if configured).
+*   **Cloudflare Account**: For the frontend (Pages).
 
-## Why?
-Because spending 3 hours adjusting margins in Word is boring.
-Building a distributed serverless autonomous agent to do it for me took way longer, but it was way more fun.
+### 2. Fork & Configure
+Fork this repository. Then, create the following secrets in your GitHub Repository settings:
+
+*   `AWS_ACCESS_KEY_ID`: IAM User with permissions to manage ECS, IAM, and S3.
+*   `AWS_SECRET_ACCESS_KEY`: The secret key.
+*   `CF_API_TOKEN`: Cloudflare Token with `Pages:Edit` and `User Details:Read` permissions.
+
+### 3. Deploy Infrastructure
+Go to the `terraform/` directory and update the `terraform.tfvars`:
+```hcl
+app_name     = "resume-app"
+github_token = "your-personal-access-token" // Used by the backend to commit changes
+repo_owner   = "your-username"
+repo_name    = "your-repo-name"
+```
+Run the initial provisioning:
+```bash
+terraform init
+terraform apply
+```
+This single command builds the VPC, ECR repositories, IAM Roles, DynamoDB tables, and S3 buckets.
+
+### 4. Connect Frontend
+1.  Go to **Cloudflare Dashboard** > **Workers & Pages**.
+2.  Connect your Git repository.
+3.  **Framework**: Next.js (Static Export).
+4.  **Build Command**: `bun run build`.
+5.  **Environment Variables**: Add `NEXT_PUBLIC_WAKE_UP_URL`. You get this URL from the Terraform output (`wake_up_url`).
+
+## Usage
+Once deployed, visit your Cloudflare URL.
+1.  The site will likely say "Backend Sleeping".
+2.  Click "Wake Up". Wait ~60 seconds for Fargate to provision capacity.
+3.  Type a request like *"Add Experience: Senior DevOps Engineer at Google, focused on Kubernetes scaling."*
+4.  The AI will generate the LaTeX patch, compile the PDF, and present the new version.
+5.  If you like it, the backend automatically commits the `resume.tex` change back to this repo.
 
 ---
-*Built by [Vishal Shaji](https://github.com/Vishhh03).*
+*Reference Implementation by [Vishal Shaji](https://github.com/Vishhh03).*
