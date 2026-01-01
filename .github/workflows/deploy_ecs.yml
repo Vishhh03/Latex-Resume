@@ -3,7 +3,7 @@ name: Deploy Backend
 on:
   push:
     branches: [main]
-    paths: ['compute/**', 'Dockerfile', 'resume.tex']
+    paths: ['compute/**', 'Dockerfile']
 
 env:
   AWS_REGION: us-east-1

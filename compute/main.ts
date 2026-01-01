@@ -215,20 +215,34 @@ Return ONLY raw JSON.
   .listen(8000);
 
 // Git Helper
-async function commitToGit(msg: string) {
+// Git Helper
+async function initRepo() {
   if (!process.env.GITHUB_TOKEN) return;
-
   const remote = `https://${process.env.GITHUB_TOKEN}@github.com/${process.env.REPO_OWNER}/${process.env.REPO_NAME}.git`;
 
-  // Configure if not already (redundant but safe)
+  console.log("Initializing Git Repo...");
+  Bun.spawnSync(["git", "init"]);
   Bun.spawnSync(["git", "config", "user.email", "ai-writer@bot"]);
   Bun.spawnSync(["git", "config", "user.name", "Ghost Writer"]);
 
-  // Check if remote exists, remove to be safe, set new
+  // Clean start
   Bun.spawnSync(["git", "remote", "remove", "origin"]);
   Bun.spawnSync(["git", "remote", "add", "origin", remote]);
 
-  // Add, Commit, Push
+  // Pull latest
+  console.log("Fetching latest resume.tex...");
+  Bun.spawnSync(["git", "fetch", "origin", "main"]);
+  const reset = Bun.spawnSync(["git", "reset", "--hard", "origin/main"]);
+
+  if (reset.exitCode === 0) {
+    console.log("Successfully pulled latest resume.tex");
+  } else {
+    console.error("Failed to pull repo:", new TextDecoder().decode(reset.stderr));
+  }
+}
+
+async function commitToGit(msg: string) {
+  // Repo is already initialized by initRepo on startup
   Bun.spawnSync(["git", "add", "resume.tex"]);
   Bun.spawnSync(["git", "commit", "-m", msg]);
 
@@ -240,4 +254,5 @@ async function commitToGit(msg: string) {
 }
 
 syncDNS();
+await initRepo();
 console.log("Resume Backend Listening on 8000");
