@@ -64,7 +64,43 @@ setInterval(async () => {
 new Elysia()
   .use(cors())
   .onBeforeHandle(() => { lastActivity = Date.now(); })
+
+  // Health Check
   .get("/health", () => ({ status: "warm" }))
+
+  // --- Manual Editor Endpoints ---
+
+  .get("/resume", async () => {
+    // Security Note: Should be protected in production!
+    return await Bun.file("resume.tex").text();
+  })
+
+  .post("/save", async ({ body }: any) => {
+    if (!body.latex) return { error: "No latex content provided" };
+    await Bun.write("resume.tex", body.latex);
+    return { status: "saved" };
+  })
+
+  .post("/preview", async ({ body, set }: any) => {
+    // Ephemeral compile - ideally use a temp file or just overwrite main if single user
+    if (!body.latex) return { error: "No latex content provided" };
+
+    // For simplicity in single-user mode, we overwrite resume.tex temporarily
+    // Ideally, write to `preview.tex`
+    await Bun.write("preview.tex", body.latex);
+
+    const proc = Bun.spawn(["tectonic", "preview.tex"]);
+    await proc.exited;
+
+    if (proc.exitCode !== 0) {
+      set.status = 500;
+      return { error: "Compilation failed" };
+    }
+    return new Response(Bun.file("preview.pdf"));
+  })
+
+  // --- AI Update Endpoint ---
+
   .post("/update", async ({ body, set }: any) => {
     // 1. Security & Budget Check
     const allowed = await checkSpend();
@@ -94,7 +130,6 @@ Return ONLY raw JSON.
 `;
 
     // 3. Call Bedrock (Llama 3 70B)
-    // Note: Adjust modelId if using a different model (e.g. Claude 3 Haiku for speed)
     const response = await bedrock.send(new InvokeModelCommand({
       modelId: "meta.llama3-70b-instruct-v1:0",
       body: JSON.stringify({
@@ -109,11 +144,9 @@ Return ONLY raw JSON.
 
     const responseBody = new TextDecoder().decode(response.body);
     const result = JSON.parse(responseBody);
-    // Llama 3 format usually puts generation in 'generation' key
     const generatedText = result.generation || result.completion || "";
 
     // 4. Parse JSON from LLM
-    // Simple extractor in case LLM adds markdown blocks
     const jsonMatch = generatedText.match(/\{[\s\S]*\}/);
     if (!jsonMatch) {
       set.status = 500;
@@ -131,7 +164,7 @@ Return ONLY raw JSON.
 
     // 5. Apply Patches
     patches.forEach((p: any) => {
-      // Simple string replace - in prod, might want more robust fuzzy matching
+      // Simple string replace
       tex = tex.replace(p.search, p.replace);
     });
     await Bun.write("resume.tex", tex);
