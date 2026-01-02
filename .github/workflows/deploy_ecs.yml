@@ -3,12 +3,11 @@ name: Deploy Backend
 on:
   push:
     branches: [main]
-    paths: ['compute/**', 'Dockerfile']
+    paths: ['compute/**', 'Dockerfile', 'resume.tex'] # Added resume.tex as a trigger
 
 env:
   AWS_REGION: us-east-1
   ECR_REPOSITORY: resume-backend
-  ECS_SERVICE: resume-service
   ECS_CLUSTER: resume-cluster
   CONTAINER_NAME: backend
 
@@ -17,7 +16,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      id-token: write # Required for OIDC if you use it, harmless otherwise
+      id-token: write 
 
     steps:
       - name: Checkout
@@ -40,8 +39,15 @@ jobs:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           IMAGE_TAG: ${{ github.sha }}
         run: |
-          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG -t $ECR_REGISTRY/$ECR_REPOSITORY:latest .
+          # Build for X86_64 to ensure SOCI compatibility
+          docker build --platform linux/amd64 -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG -t $ECR_REGISTRY/$ECR_REPOSITORY:latest .
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
           echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
 
+      - name: Wait for SOCI Indexing
+        run: |
+          echo "Waiting 30 seconds for SOCI Indexer Lambda to process the new image..."
+          sleep 30
+          # Optional: Add an AWS CLI check here to verify the soci artifact exists in ECR
+          aws ecr describe-images --repository-name ${{ env.ECR_REPOSITORY }} --image-ids imageTag=latest
