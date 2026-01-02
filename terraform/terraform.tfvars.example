@@ -1,3 +1,5 @@
 github_token = "ghp_YOUR_TOKEN_HERE"
 github_repo  = "Vishhh03/Latex-Resume"
 aws_region   = "us-east-1"
+vercel_api_token = "your_vercel_token_here"
+vercel_record_id = "rec_xxxxxxxxxxxx"

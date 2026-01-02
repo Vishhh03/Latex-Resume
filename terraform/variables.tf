@@ -6,7 +6,6 @@ variable "github_token" { sensitive = true }
 variable "repo_owner" {}
 variable "repo_name" {}
 
-# Cloudflare (Legacy/DNS - kept for compatibility if user fills them, otherwise dummy)
-variable "cf_zone_id" { default = "" }
-variable "cf_record_id" { default = "" }
-variable "cf_api_token" { default = "" }
+# --- Variables for Vercel & GitHub ---
+variable "vercel_api_token" { type = string; sensitive = true }
+variable "vercel_record_id" { type = string }

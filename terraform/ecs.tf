@@ -3,8 +3,9 @@ resource "aws_ecs_cluster" "main" {
 }
 
 resource "aws_ecs_cluster_capacity_providers" "spot" {
-  cluster_name = aws_ecs_cluster.main.name
+  cluster_name       = aws_ecs_cluster.main.name
   capacity_providers = ["FARGATE_SPOT"]
+  
   default_capacity_provider_strategy {
     capacity_provider = "FARGATE_SPOT"
     weight            = 1
@@ -13,25 +14,7 @@ resource "aws_ecs_cluster_capacity_providers" "spot" {
 
 resource "aws_ecr_repository" "repo" {
   name                 = "resume-backend"
-  image_tag_mutability = "MUTABLE"
   force_delete         = true
-}
-
-resource "aws_ecr_lifecycle_policy" "cleanup" {
-  repository = aws_ecr_repository.repo.name
-
-  policy = jsonencode({
-    rules = [{
-      rulePriority = 1
-      description  = "Keep last 5 images"
-      selection    = {
-        tagStatus     = "any"
-        countType     = "imageCountMoreThan"
-        countNumber   = 5
-      }
-      action       = { type = "expire" }
-    }]
-  })
 }
 
 resource "aws_ecs_task_definition" "app" {
@@ -48,13 +31,12 @@ resource "aws_ecs_task_definition" "app" {
     image = "${aws_ecr_repository.repo.repository_url}:latest"
     portMappings = [{ containerPort = 8000 }]
     environment = [
-      { name = "CF_ZONE_ID",   value = var.cf_zone_id },
-      { name = "CF_RECORD_ID", value = var.cf_record_id },
-      { name = "CF_API_TOKEN", value = var.cf_api_token },
-      { name = "GITHUB_TOKEN", value = var.github_token },
-      { name = "REPO_OWNER",   value = var.repo_owner },
-      { name = "REPO_NAME",    value = var.repo_name },
-      { name = "CLUSTER_NAME", value = "resume-cluster" }
+      { name = "VERCEL_API_TOKEN", value = var.vercel_api_token },
+      { name = "VERCEL_RECORD_ID", value = var.vercel_record_id },
+      { name = "GITHUB_TOKEN",     value = var.github_token },
+      { name = "REPO_OWNER",       value = var.repo_owner },
+      { name = "REPO_NAME",        value = var.repo_name },
+      { name = "CLUSTER_NAME",     value = aws_ecs_cluster.main.name }
     ]
     logConfiguration = {
       logDriver = "awslogs"
@@ -68,6 +50,5 @@ resource "aws_ecs_task_definition" "app" {
 }
 
 resource "aws_cloudwatch_log_group" "logs" {
-  name              = "/ecs/resume-task"
-  retention_in_days = 7
+  name = "/ecs/resume-task"
 }

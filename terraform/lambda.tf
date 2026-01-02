@@ -4,26 +4,6 @@ data "archive_file" "wakeup_zip" {
   output_path = "${path.module}/wake_up.zip"
 }
 
-resource "aws_iam_role" "wakeup_role" {
-  name = "resume_wakeup_role"
-  assume_role_policy = jsonencode({
-    Version = "2012-10-17", Statement = [{ Action = "sts:AssumeRole", Effect = "Allow", Principal = { Service = "lambda.amazonaws.com" } }]
-  })
-}
-
-resource "aws_iam_role_policy" "wakeup_policy" {
-  role = aws_iam_role.wakeup_role.id
-  policy = jsonencode({
-    Version = "2012-10-17", Statement = [
-      { Action = ["ecs:RunTask", "ecs:ListTasks", "ecs:DescribeTasks"], Effect = "Allow", Resource = "*" },
-      { Action = ["ec2:DescribeNetworkInterfaces"], Effect = "Allow", Resource = "*" },
-      { Action = ["dynamodb:GetItem"], Effect = "Allow", Resource = "arn:aws:dynamodb:*:*:table/DailySpend" },
-      { Action = ["iam:PassRole"], Effect = "Allow", Resource = "*" },
-      { Action = ["logs:CreateLogGroup", "logs:CreateLogStream", "logs:PutLogEvents"], Effect = "Allow", Resource = "*" }
-    ]
-  })
-}
-
 resource "aws_lambda_function" "wakeup" {
   function_name    = "resume-wakeup"
   role             = aws_iam_role.wakeup_role.arn
@@ -31,12 +11,11 @@ resource "aws_lambda_function" "wakeup" {
   runtime          = "python3.12"
   filename         = data.archive_file.wakeup_zip.output_path
   source_code_hash = data.archive_file.wakeup_zip.output_base64sha256
-  timeout          = 30
-
+  
   environment {
     variables = {
       CLUSTER_NAME    = aws_ecs_cluster.main.name
-      TASK_DEFINITION = aws_ecs_task_definition.app.family
+      TASK_DEFINITION = aws_ecs_task_definition.app.arn
       SUBNETS         = join(",", data.aws_subnets.default.ids)
     }
   }
@@ -49,20 +28,4 @@ resource "aws_lambda_function_url" "wakeup_url" {
     allow_origins = ["*"]
     allow_methods = ["GET"]
   }
-}
-
-# Data source for default VPC subnets
-data "aws_vpc" "default_vpc" {
-  default = true
-}
-
-data "aws_subnets" "default" {
-  filter {
-    name   = "vpc-id"
-    values = [data.aws_vpc.default_vpc.id]
-  }
-}
-
-output "wake_up_url" {
-  value = aws_lambda_function_url.wakeup_url.function_url
 }
