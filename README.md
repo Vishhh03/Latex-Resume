@@ -2,7 +2,7 @@
 
 I got tired of manually tweaking my resume for every job application, so I engineered a solution to handle it.
 
-This is a self-healing, serverless platform that hosts my resume and uses an AI agent (Llama 3 on Bedrock) to generate LaTeX patches for real-time updates.
+This is a self-healing, serverless platform that hosts my resume and uses an AI agent (Qwen 3 on Bedrock) to generate LaTeX patches for real-time updates.
 
 It costs **$0.00/hr** when nobody is using it.
 
@@ -15,7 +15,7 @@ Most people would just use a Lambda function. I chose Fargate Spot for two reaso
 
 ### Why Amazon Bedrock?
 I didn't want to manage OpenAI API keys in my frontend or worry about rate limits.
-Bedrock runs entirely inside my AWS VPC. There are no API keys to leak, and IAM roles handle the authentication. Plus, Llama 3 70B on Bedrock is strictly pay-per-token, making it significantly cheaper than a ChatGPT Plus subscription for this use case.
+Bedrock runs entirely inside my AWS VPC. There are no API keys to leak, and IAM roles handle the authentication. Plus, Qwen 3 32B on Bedrock is strictly pay-per-token, making it significantly cheaper than a ChatGPT Plus subscription for this use case.
 
 ### How is it "Efficient"?
 The system uses a **Wake-on-Demand** pattern.
