@@ -15,8 +15,6 @@ def create_response(status_code, body):
     }
 
 def handler(event, context):
-
-
     ecs = boto3.client('ecs')
     ec2 = boto3.client('ec2')
     dynamodb = boto3.client('dynamodb')
@@ -24,6 +22,7 @@ def handler(event, context):
     cluster = os.environ['CLUSTER_NAME']
     task_def = os.environ['TASK_DEFINITION']
     subnets = os.environ['SUBNETS'].split(',')
+    security_group = os.environ['SECURITY_GROUP']
 
     # 1. Budget Guard (Fail Fast)
     today = datetime.date.today().isoformat()
@@ -53,6 +52,7 @@ def handler(event, context):
                 networkConfiguration={
                     'awsvpcConfiguration': {
                         'subnets': subnets,
+                        'securityGroups': [security_group],
                         'assignPublicIp': 'ENABLED'
                     }
                 }

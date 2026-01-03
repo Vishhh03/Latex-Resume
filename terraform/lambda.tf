@@ -17,6 +17,7 @@ resource "aws_lambda_function" "wakeup" {
       CLUSTER_NAME    = aws_ecs_cluster.main.name
       TASK_DEFINITION = aws_ecs_task_definition.app.arn
       SUBNETS         = join(",", data.aws_subnets.default.ids)
+      SECURITY_GROUP  = aws_security_group.app_sg.id
     }
   }
 }
