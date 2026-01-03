@@ -43,7 +43,7 @@ resource "aws_iam_role_policy" "wakeup_policy" {
   role = aws_iam_role.wakeup_role.id
   policy = jsonencode({
     Version = "2012-10-17", Statement = [
-      { Action = ["ecs:RunTask", "ecs:ListTasks"], Effect = "Allow", Resource = "*" },
+      { Action = ["ecs:RunTask", "ecs:ListTasks", "ecs:DescribeTasks", "ec2:DescribeNetworkInterfaces"], Effect = "Allow", Resource = "*" },
       { Action = ["iam:PassRole"], Effect = "Allow", Resource = [aws_iam_role.execution.arn, aws_iam_role.task.arn] },
       { Action = ["logs:CreateLogGroup", "logs:CreateLogStream", "logs:PutLogEvents"], Effect = "Allow", Resource = "*" }
     ]

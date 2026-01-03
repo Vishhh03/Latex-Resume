@@ -3,7 +3,10 @@ name: Deploy Backend
 on:
   push:
     branches: [main]
-    paths: ['compute/**', 'Dockerfile', 'resume.tex'] # Added resume.tex as a trigger
+    paths:
+      - "compute/**"
+      - "Dockerfile"
+      - "resume.tex"
 
 env:
   AWS_REGION: us-east-1
@@ -14,14 +17,21 @@ env:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+
     permissions:
       contents: read
-      id-token: write 
+      id-token: write
 
     steps:
+      # ---------------------------
+      # 1. Checkout code
+      # ---------------------------
       - name: Checkout
         uses: actions/checkout@v4
 
+      # ---------------------------
+      # 2. AWS Credentials
+      # ---------------------------
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -29,25 +39,58 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
 
+      # ---------------------------
+      # 3. Login to ECR
+      # ---------------------------
       - name: Login to Amazon ECR
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
 
+      # ---------------------------
+      # 4. Build & Push Image
+      # ---------------------------
       - name: Build, tag, and push image to Amazon ECR
         id: build-image
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           IMAGE_TAG: ${{ github.sha }}
         run: |
-          # Build for X86_64 to ensure SOCI compatibility
-          docker build --platform linux/amd64 -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG -t $ECR_REGISTRY/$ECR_REPOSITORY:latest .
+          echo "Building Docker image..."
+          docker build \
+            --platform linux/amd64 \
+            -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG \
+            -t $ECR_REGISTRY/$ECR_REPOSITORY:latest \
+            .
+
+          echo "Pushing images to ECR..."
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
+
           echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
 
-      - name: Wait for SOCI Indexing
+      # ---------------------------
+      # 5. Create SOCI Index
+      # ---------------------------
+            - name: Create SOCI index
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_TAG: ${{ github.sha }}
         run: |
-          echo "Waiting 30 seconds for SOCI Indexer Lambda to process the new image..."
-          sleep 30
-          # Optional: Add an AWS CLI check here to verify the soci artifact exists in ECR
-          aws ecr describe-images --repository-name ${{ env.ECR_REPOSITORY }} --image-ids imageTag=latest
+          echo "Creating SOCI index for image..."
+          docker run --rm \
+            -v /var/run/docker.sock:/var/run/docker.sock \
+            -e AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }} \
+            -e AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }} \
+            -e AWS_REGION=${{ env.AWS_REGION }} \
+            public.ecr.aws/aws-lambda/soci-indexer:latest \
+            create \
+            --image $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+
+      # ---------------------------
+      # 6. Verify Image Exists
+      # ---------------------------
+      - name: Verify image in ECR
+        run: |
+          aws ecr describe-images \
+            --repository-name ${{ env.ECR_REPOSITORY }} \
+            --image-ids imageTag=latest

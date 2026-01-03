@@ -31,8 +31,6 @@ resource "aws_ecs_task_definition" "app" {
     image = "${aws_ecr_repository.repo.repository_url}:latest"
     portMappings = [{ containerPort = 8000 }]
     environment = [
-      { name = "VERCEL_API_TOKEN", value = var.vercel_api_token },
-      { name = "VERCEL_RECORD_ID", value = var.vercel_record_id },
       { name = "GITHUB_TOKEN",     value = var.github_token },
       { name = "REPO_OWNER",       value = var.repo_owner },
       { name = "REPO_NAME",        value = var.repo_name },
