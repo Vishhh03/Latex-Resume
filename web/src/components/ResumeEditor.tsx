@@ -12,6 +12,7 @@ interface ResumeEditorProps {
 export default function ResumeEditor({ latex, setLatex, onPreviewUpdate, apiUrl }: ResumeEditorProps) {
     const [status, setStatus] = useState<'idle' | 'loading' | 'saving' | 'compiling'>('idle');
     const [autoCompile, setAutoCompile] = useState(true);
+    const [errorLog, setErrorLog] = useState<string | null>(null);
     const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const lastCompiledRef = useRef<string>('');
 
@@ -20,6 +21,7 @@ export default function ResumeEditor({ latex, setLatex, onPreviewUpdate, apiUrl 
         if (content === lastCompiledRef.current) return; // Skip if unchanged
 
         setStatus('compiling');
+        setErrorLog(null); // Clear previous errors
         try {
             const res = await fetch(`${apiUrl}/preview`, {
                 method: 'POST',
@@ -32,9 +34,17 @@ export default function ResumeEditor({ latex, setLatex, onPreviewUpdate, apiUrl 
                 const url = URL.createObjectURL(blob);
                 onPreviewUpdate(url);
                 lastCompiledRef.current = content;
+            } else {
+                const errData = await res.json();
+                if (errData.logs) {
+                    setErrorLog(errData.logs);
+                } else {
+                    setErrorLog(errData.error || "Compilation failed");
+                }
             }
         } catch (e) {
             console.error(e);
+            setErrorLog("Network error: " + String(e));
         } finally {
             setStatus('idle');
         }
@@ -89,7 +99,7 @@ export default function ResumeEditor({ latex, setLatex, onPreviewUpdate, apiUrl 
     };
 
     return (
-        <div className="flex flex-col bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden h-full">
+        <div className="flex flex-col bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden h-full relative">
             <div className="p-4 border-b border-zinc-800 flex justify-between items-center bg-zinc-950">
                 <div className="flex items-center gap-3">
                     <h3 className="text-white font-bold">Manual Editor</h3>
@@ -131,6 +141,15 @@ export default function ResumeEditor({ latex, setLatex, onPreviewUpdate, apiUrl 
                 onChange={(e) => setLatex(e.target.value)}
                 spellCheck={false}
             />
+            {errorLog && (
+                <div className="absolute bottom-0 left-0 right-0 max-h-48 overflow-y-auto bg-red-950/90 border-t border-red-800 p-3 text-red-200 text-xs font-mono shadow-xl backdrop-blur-sm">
+                    <div className="flex justify-between items-start mb-2 sticky top-0 bg-red-950/90 pb-2 border-b border-red-800/50">
+                        <span className="font-bold">⚠ Compilation Error</span>
+                        <button onClick={() => setErrorLog(null)} className="text-red-400 hover:text-white">✕</button>
+                    </div>
+                    <pre className="whitespace-pre-wrap">{errorLog}</pre>
+                </div>
+            )}
         </div>
     );
 }

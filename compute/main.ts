@@ -160,13 +160,27 @@ new Elysia()
         if (!body.latex) return { error: "No content" };
         await Bun.write("preview.tex", body.latex);
 
-        const proc = Bun.spawn(["tectonic", "preview.tex"]);
-        const { exitCode } = await proc.exited;
-        if (exitCode !== 0) {
+        try {
+            const proc = Bun.spawn(["tectonic", "preview.tex"], {
+                stdout: "pipe",
+                stderr: "pipe",
+            });
+            const text = await new Response(proc.stdout).text();
+            const err = await new Response(proc.stderr).text();
+            const { exitCode } = await proc.exited;
+
+            if (exitCode !== 0) {
+                set.status = 400;
+                return {
+                    error: "LaTeX Compilation Error",
+                    logs: text + "\n" + err
+                };
+            }
+            return new Response(Bun.file("preview.pdf"));
+        } catch (e) {
             set.status = 500;
-            return { error: "LaTeX Compilation Error" };
+            return { error: "Server Error during compilation", logs: String(e) };
         }
-        return new Response(Bun.file("preview.pdf"));
     })
 
     .post("/update", async ({ body, set }: any) => {
