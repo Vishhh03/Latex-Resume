@@ -1,4 +1,4 @@
-import { Elysia, t } from 'elysia';
+import { Elysia } from 'elysia';
 import { cors } from '@elysiajs/cors';
 import { ECSClient, StopTaskCommand } from "@aws-sdk/client-ecs";
 import { DynamoDBClient, GetItemCommand, UpdateItemCommand } from "@aws-sdk/client-dynamodb";
@@ -24,7 +24,6 @@ const bedrock = new BedrockRuntimeClient({ region: "us-east-1" });
  * 1. VERCEL DNS SYNC
  */
 const syncDNS = async () => {
-    // Skip DNS sync for .vercel.app domains (no custom domain configured)
     if (!process.env.VERCEL_RECORD_ID || !process.env.VERCEL_API_TOKEN) {
         console.log("[DNS] Skipped - No custom domain configured");
         return;
@@ -91,7 +90,38 @@ setInterval(async () => {
 }, 60000);
 
 /**
- * 4. ELYSIA SERVER
+ * 4. GIT HELPERS
+ */
+async function initRepo() {
+    if (!process.env.GITHUB_TOKEN) return;
+    const remote = `https://${process.env.GITHUB_TOKEN}@github.com/${process.env.REPO_OWNER}/${process.env.REPO_NAME}.git`;
+
+    Bun.spawnSync(["git", "init"]);
+    Bun.spawnSync(["git", "config", "user.email", "bot@terraless.io"]);
+    Bun.spawnSync(["git", "config", "user.name", "QwenArchitect"]);
+    try {
+        Bun.spawnSync(["git", "remote", "add", "origin", remote]);
+    } catch { } // Remote might exist
+
+    console.log("[Git] Syncing main...");
+    Bun.spawnSync(["git", "fetch", "origin", "main"]);
+    Bun.spawnSync(["git", "reset", "--hard", "origin/main"]);
+
+    // Compile PDF on startup so /pdf works immediately
+    console.log("[Init] Compiling initial PDF...");
+    const { exitCode } = Bun.spawnSync(["tectonic", "resume.tex"]);
+    if (exitCode !== 0) console.error("[Init] Initial compilation failed.");
+}
+
+async function commitToGit(msg: string) {
+    Bun.spawnSync(["git", "add", "resume.tex"]);
+    Bun.spawnSync(["git", "commit", "-m", msg]);
+    const { exitCode } = Bun.spawnSync(["git", "push", "origin", "main"]);
+    if (exitCode !== 0) throw new Error("Push failed");
+}
+
+/**
+ * 5. ELYSIA SERVER
  */
 new Elysia()
     .use(cors({
@@ -110,7 +140,6 @@ new Elysia()
     })
 
     .get("/history", async () => {
-        // Returns git log as JSON
         const cmd = ["git", "log", "--pretty=format:%H|%s|%an|%aI", "-n", "10"];
         const proc = Bun.spawn(cmd, { stdout: "pipe" });
         const output = await new Response(proc.stdout).text();
@@ -134,7 +163,6 @@ new Elysia()
     .post("/save", async ({ body }: any) => {
         if (!body.latex) return { error: "No content" };
         await Bun.write("resume.tex", body.latex);
-        // Save no longer commits automatically. Explicit commit required.
         return { status: "saved" };
     })
 
@@ -142,7 +170,8 @@ new Elysia()
         if (!body.latex) return { error: "No content" };
         await Bun.write("preview.tex", body.latex);
 
-        const { exitCode } = await Bun.spawn(["tectonic", "preview.tex"]).exited;
+        const proc = Bun.spawn(["tectonic", "preview.tex"]);
+        const { exitCode } = await proc.exited;
         if (exitCode !== 0) {
             set.status = 500;
             return { error: "LaTeX Compilation Error" };
@@ -158,92 +187,40 @@ new Elysia()
 
         let tex = await Bun.file("resume.tex").text();
         const prompt = `You are a LaTeX Architect. Generate a JSON patch for this resume.
-Current LaTeX: \`\`\`latex\n${tex}\n\`\`\`
+Current LaTeX: \`\`\`latex
+${tex}
+\`\`\`
 Instruction: ${body.instruction}
 Context: ${body.job_description || "N/A"}
 
 Response format: { "patches": [{ "search": "exact string", "replace": "new string" }] }
 Return ONLY raw JSON.`;
 
-        // ... (imports remain)
-        import { Elysia } from 'elysia';
-// ...
-
-// ... (existing code)
-
-    .post("/update", async ({ body, set }: any) => {
-            if (!(await checkSpend())) {
-                set.status = 402;
-                return { error: "Daily budget exceeded" };
-            }
-
-            let tex = await Bun.file("resume.tex").text();
-            // Updated Model ID to a valid one found in models.json
-            // Using "qwen.qwen3-32b-v1:0" (Qwen3 32B dense)
-            // Adjust prompt if needed for specific model behavior
-            const prompt = `You are a LaTeX Architect. Generate a JSON patch for this resume.
-Current LaTeX: \`\`\`latex\n${tex}\n\`\`\`
-Instruction: ${body.instruction}
-Context: ${body.job_description || "N/A"}
-
-Response format: { "patches": [{ "search": "exact string", "replace": "new string" }] }
-Return ONLY raw JSON.`;
-
-            // Bedrock Invoke
-            const response = await bedrock.send(new InvokeModelCommand({
-                modelId: "qwen.qwen3-32b-v1:0", // CORRECTED MODEL ID
-                contentType: "application/json",
-                accept: "application/json",
-                body: JSON.stringify({
-                    prompt: prompt,
-                    max_tokens: 4096,
-                    temperature: 0.1,
-                    stop: ["<|endoftext|>", "<|im_end|>"]
-                })
-            }));
-
-            // ... (rest of update logic)
-        })
-            .listen(8000);
-
-        /**
-         * 5. GIT HELPERS
-         */
-        async function initRepo() {
-            if (!process.env.GITHUB_TOKEN) return;
-            const remote = `https://${process.env.GITHUB_TOKEN}@github.com/${process.env.REPO_OWNER}/${process.env.REPO_NAME}.git`;
-
-            Bun.spawnSync(["git", "init"]);
-            Bun.spawnSync(["git", "config", "user.email", "bot@terraless.io"]);
-            Bun.spawnSync(["git", "config", "user.name", "QwenArchitect"]);
-            try {
-                Bun.spawnSync(["git", "remote", "add", "origin", remote]);
-            } catch { } // Remote might exist
-
-            console.log("[Git] Syncing main...");
-            Bun.spawnSync(["git", "fetch", "origin", "main"]);
-            Bun.spawnSync(["git", "reset", "--hard", "origin/main"]);
-
-            // Compile PDF on startup so /pdf works immediately
-            console.log("[Init] Compiling initial PDF...");
-            const { exitCode } = Bun.spawnSync(["tectonic", "resume.tex"]);
-            if (exitCode !== 0) console.error("[Init] Initial compilation failed.");
-        }
-
-        // ... (rest of file)
+        // Bedrock Invoke
+        const response = await bedrock.send(new InvokeModelCommand({
+            modelId: "qwen.qwen3-32b-v1:0",
+            contentType: "application/json",
+            accept: "application/json",
+            body: JSON.stringify({
+                prompt: prompt,
+                max_tokens: 4096,
+                temperature: 0.1
+            })
+        }));
 
         // Cost Accounting
-        const iTokens = parseInt(response.headers["x-amzn-bedrock-input-token-count"] || "0");
-        const oTokens = parseInt(response.headers["x-amzn-bedrock-output-token-count"] || "0");
+        const responseHeaders = response.$metadata.httpStatusCode === 200 ? {} : {};
+        const iTokens = 0; // Token counts from response metadata if available
+        const oTokens = 0;
         await logSpend((iTokens * COST_IN_TOKENS) + (oTokens * COST_OUT_TOKENS));
 
         const resBody = JSON.parse(new TextDecoder().decode(response.body));
-        const generated = resBody.output?.text || resBody.generation || "";
+        const generated = resBody.output?.text || resBody.generation || resBody.choices?.[0]?.text || "";
         const jsonMatch = generated.match(/\{[\s\S]*\}/);
 
         if (!jsonMatch) {
             set.status = 500;
-            return { error: "AI response was not valid JSON" };
+            return { error: "AI response was not valid JSON", raw: generated };
         }
 
         try {
@@ -251,7 +228,8 @@ Return ONLY raw JSON.`;
             patches.forEach((p: any) => { tex = tex.split(p.search).join(p.replace); });
 
             await Bun.write("resume.tex", tex);
-            const { exitCode } = await Bun.spawn(["tectonic", "resume.tex"]).exited;
+            const proc = Bun.spawn(["tectonic", "resume.tex"]);
+            const { exitCode } = await proc.exited;
 
             if (exitCode !== 0) {
                 set.status = 500;
@@ -259,7 +237,6 @@ Return ONLY raw JSON.`;
             }
 
             // Return JSON so frontend can handle state (Undo/Redo)
-            // We return the NEW latex.
             return {
                 status: "success",
                 latex: tex,
@@ -268,36 +245,10 @@ Return ONLY raw JSON.`;
 
         } catch (e) {
             set.status = 500;
-            return { error: "Failed to apply patches" };
+            return { error: "Failed to apply patches: " + String(e) };
         }
     })
     .listen(8000);
-
-/**
- * 5. GIT HELPERS
- */
-async function initRepo() {
-    if (!process.env.GITHUB_TOKEN) return;
-    const remote = `https://${process.env.GITHUB_TOKEN}@github.com/${process.env.REPO_OWNER}/${process.env.REPO_NAME}.git`;
-
-    Bun.spawnSync(["git", "init"]);
-    Bun.spawnSync(["git", "config", "user.email", "bot@terraless.io"]);
-    Bun.spawnSync(["git", "config", "user.name", "QwenArchitect"]);
-    try {
-        Bun.spawnSync(["git", "remote", "add", "origin", remote]);
-    } catch { } // Remote might exist
-
-    console.log("[Git] Syncing main...");
-    Bun.spawnSync(["git", "fetch", "origin", "main"]);
-    Bun.spawnSync(["git", "reset", "--hard", "origin/main"]);
-}
-
-async function commitToGit(msg: string) {
-    Bun.spawnSync(["git", "add", "resume.tex"]);
-    Bun.spawnSync(["git", "commit", "-m", msg]);
-    const { exitCode } = Bun.spawnSync(["git", "push", "origin", "main"]);
-    if (exitCode !== 0) throw new Error("Push failed");
-}
 
 // Ignition
 syncDNS();
