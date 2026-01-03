@@ -71,7 +71,7 @@ jobs:
       # ---------------------------
       # 5. Create SOCI Index
       # ---------------------------
-            - name: Create SOCI index
+      - name: Create SOCI index
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           IMAGE_TAG: ${{ github.sha }}
