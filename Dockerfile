@@ -20,22 +20,24 @@ RUN bun run build
 # =============================================================================
 FROM oven/bun:latest
 
-# Install system dependencies & Git & cloudflared
-RUN apt-get update && apt-get install -y \
+# Install system dependencies & Git & cloudflared & TeX Live
+RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
-    libfontconfig1 \
-    libgraphite2-3 \
-    libharfbuzz0b \
-    libicu-dev \
-    libssl-dev \
-    libssl3 \
     ca-certificates \
     git \
+    # TeX Live minimal + latexmk
+    texlive-latex-base \
+    texlive-latex-recommended \
+    texlive-fonts-recommended \
+    texlive-latex-extra \
+    texlive-fonts-extra \
+    texlive-plain-generic \
+    texlive-science \
+    texlive-pictures \
+    texlive-xetex \
+    latexmk \
+    lmodern \
     && rm -rf /var/lib/apt/lists/*
-
-# Install Tectonic (Fast LaTeX engine)
-RUN curl --proto '=https' --tlsv1.2 -fsSL https://drop-sh.fullyjustified.net | sh \
-    && mv tectonic /usr/local/bin/
 
 # Install cloudflared
 RUN curl -L https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64 \
@@ -56,8 +58,8 @@ COPY resume.tex .
 # Copy built frontend (static files)
 COPY --from=frontend /frontend/out ./public
 
-# Pre-warm Tectonic (download TeX bundles at build time)
-RUN tectonic resume.tex && rm resume.pdf
+# Pre-compile resume to cache format files
+RUN latexmk -xelatex -interaction=nonstopmode resume.tex && latexmk -c
 
 # Copy entrypoint script
 COPY entrypoint.sh ./

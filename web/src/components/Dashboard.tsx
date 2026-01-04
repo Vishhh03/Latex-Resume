@@ -41,6 +41,23 @@ export default function Dashboard({ apiUrl }: DashboardProps) {
     const [isCommitOpen, setIsCommitOpen] = useState(false);
     const [isHistoryOpen, setIsHistoryOpen] = useState(false);
     const [isCommitting, setIsCommitting] = useState(false);
+    const [isConnected, setIsConnected] = useState(true);
+
+    // Health check - detect backend crashes
+    useEffect(() => {
+        const checkHealth = async () => {
+            try {
+                const res = await fetch(`${apiUrl}/health`, { method: 'GET' });
+                setIsConnected(res.ok);
+            } catch {
+                setIsConnected(false);
+            }
+        };
+
+        checkHealth(); // Initial check
+        const interval = setInterval(checkHealth, 10000); // Every 10s
+        return () => clearInterval(interval);
+    }, [apiUrl]);
 
     // -- Undo/Redo Logic --
     const pushState = useCallback((newLatex: string) => {
@@ -95,12 +112,39 @@ export default function Dashboard({ apiUrl }: DashboardProps) {
     };
 
     return (
-        <div className="flex h-[calc(100vh-100px)] w-full max-w-7xl mx-auto gap-4 p-4">
+        <div className="flex h-[calc(100vh-100px)] w-full max-w-7xl mx-auto gap-4 p-4 relative">
+
+            {/* Disconnected Overlay */}
+            {!isConnected && (
+                <div className="absolute inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center rounded-xl">
+                    <div className="text-center p-8">
+                        <div className="text-6xl mb-4">⚡</div>
+                        <h2 className="text-2xl font-bold text-white mb-2">Backend Disconnected</h2>
+                        <p className="text-zinc-400 mb-6">The container has stopped or crashed.</p>
+                        <div className="flex gap-4 justify-center">
+                            <button
+                                onClick={() => window.location.reload()}
+                                className="px-4 py-2 bg-zinc-800 text-white rounded hover:bg-zinc-700 transition-colors"
+                            >
+                                Retry Connection
+                            </button>
+                            <a
+                                href="https://github.com/Vishhh03/Latex-Resume"
+                                target="_blank"
+                                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-500 transition-colors"
+                            >
+                                View on GitHub
+                            </a>
+                        </div>
+                        <p className="text-zinc-500 text-sm mt-6">Run <code className="bg-zinc-800 px-2 py-1 rounded">npx vishhh03</code> to restart</p>
+                    </div>
+                </div>
+            )}
 
             {/* LEFT PANE: Input (Tabs) */}
             <div className="w-1/2 flex flex-col gap-4">
 
-                {/* Top Bar: Tabs + Undo/Redo/Commit */}
+                {/* Top Bar: Tabs + Undo/Redo/Commit/Stop */}
                 <div className="flex justify-between items-center bg-zinc-900 p-2 rounded-lg border border-zinc-800">
                     <div className="flex gap-1">
                         <button
@@ -117,7 +161,7 @@ export default function Dashboard({ apiUrl }: DashboardProps) {
                         </button>
                     </div>
 
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 items-center">
                         <button onClick={handleUndo} disabled={history.length === 0} className="text-zinc-400 hover:text-white disabled:opacity-30" title="Undo">
                             ↩
                         </button>
@@ -130,6 +174,20 @@ export default function Dashboard({ apiUrl }: DashboardProps) {
                             className="px-3 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-500 transition-colors"
                         >
                             Commit to Git
+                        </button>
+                        <button
+                            onClick={() => {
+                                if (confirm('Stop the ECS container? This will shut down the backend.')) {
+                                    fetch('/stop', { method: 'POST' })
+                                        .then(r => r.json())
+                                        .then(data => alert(data.message || 'Container stopping...'))
+                                        .catch(() => alert('Stop request sent'));
+                                }
+                            }}
+                            className="px-3 py-1 bg-red-600 text-white text-xs rounded hover:bg-red-500 transition-colors"
+                            title="Stop ECS Container"
+                        >
+                            Stop
                         </button>
                     </div>
                 </div>

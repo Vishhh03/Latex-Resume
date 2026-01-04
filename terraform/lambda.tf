@@ -31,3 +31,37 @@ resource "aws_lambda_function_url" "wakeup_url" {
     allow_methods     = ["*"]
   }
 }
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# Stop Lambda - Stops all running ECS tasks
+# ═══════════════════════════════════════════════════════════════════════════════
+data "archive_file" "stop_zip" {
+  type        = "zip"
+  source_file = "${path.module}/../lambda_src/stop.py"
+  output_path = "${path.module}/stop.zip"
+}
+
+resource "aws_lambda_function" "stop" {
+  function_name    = "resume-stop"
+  role             = aws_iam_role.wakeup_role.arn  # Reuse same role (has ECS permissions)
+  handler          = "stop.handler"
+  runtime          = "python3.12"
+  filename         = data.archive_file.stop_zip.output_path
+  source_code_hash = data.archive_file.stop_zip.output_base64sha256
+  timeout          = 15
+  
+  environment {
+    variables = {
+      CLUSTER_NAME = aws_ecs_cluster.main.name
+    }
+  }
+}
+
+resource "aws_lambda_function_url" "stop_url" {
+  function_name      = aws_lambda_function.stop.function_name
+  authorization_type = "NONE"
+  cors {
+    allow_origins     = ["*"]
+    allow_methods     = ["*"]
+  }
+}

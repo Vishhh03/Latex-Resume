@@ -43,7 +43,8 @@ async function logSpend(cost: number) {
     await db.send(new UpdateItemCommand({
         TableName: "DailySpend",
         Key: { date: { S: today } },
-        UpdateExpression: "ADD total :cost",
+        UpdateExpression: "ADD #t :cost",
+        ExpressionAttributeNames: { "#t": "total" },
         ExpressionAttributeValues: { ":cost": { N: cost.toString() } }
     }));
 }
@@ -84,7 +85,7 @@ async function initRepo() {
 
     // Compile PDF on startup so /pdf works immediately
     console.log("[Init] Compiling initial PDF...");
-    const { exitCode } = Bun.spawnSync(["tectonic", "resume.tex"]);
+    const { exitCode } = Bun.spawnSync(["latexmk", "-xelatex", "-interaction=nonstopmode", "resume.tex"]);
     if (exitCode !== 0) console.error("[Init] Initial compilation failed.");
 }
 
@@ -170,6 +171,20 @@ new Elysia()
         }
     })
 
+    .post("/stop", async () => {
+        console.log("[System] Stop request received. Terminating Fargate Task...");
+        try {
+            const meta = await fetch("http://169.254.170.2/v2/metadata").then(r => r.json());
+            await ecs.send(new StopTaskCommand({
+                cluster: process.env.CLUSTER_NAME,
+                task: meta.TaskARN
+            }));
+            return { status: "stopping", message: "Container shutting down..." };
+        } catch (e) {
+            return { status: "error", message: String(e) };
+        }
+    })
+
     .post("/save", async ({ body }: any) => {
         if (!body.latex) return { error: "No content" };
         try {
@@ -182,24 +197,28 @@ new Elysia()
     })
 
     .post("/preview", async ({ body, set }: any) => {
+        const startTime = Date.now();
         if (!body.latex) return { error: "No content" };
 
         try {
             const safeTex = sanitizeLatex(body.latex);
             await Bun.write("preview.tex", safeTex);
+            console.log(`[Preview] Write: ${Date.now() - startTime}ms`);
         } catch (e) {
             set.status = 400;
             return { error: String(e) };
         }
 
         try {
-            const proc = Bun.spawn(["tectonic", "preview.tex"], {
+            const compileStart = Date.now();
+            const proc = Bun.spawn(["latexmk", "-xelatex", "-interaction=nonstopmode", "preview.tex"], {
                 stdout: "pipe",
                 stderr: "pipe",
             });
             const text = await new Response(proc.stdout).text();
             const err = await new Response(proc.stderr).text();
             const { exitCode } = await proc.exited;
+            console.log(`[Preview] latexmk: ${Date.now() - compileStart}ms`);
 
             // Exit code 0 = success, 1 = warnings only (still success), >= 2 = error
             if (exitCode >= 2) {
@@ -209,6 +228,7 @@ new Elysia()
                     logs: text + "\n" + err
                 };
             }
+            console.log(`[Preview] Total: ${Date.now() - startTime}ms`);
             return new Response(Bun.file("preview.pdf"));
         } catch (e) {
             set.status = 500;
@@ -263,7 +283,7 @@ new Elysia()
             patches.forEach((p: any) => { tex = tex.split(p.search).join(p.replace); });
 
             await Bun.write("resume.tex", tex);
-            const proc = Bun.spawn(["tectonic", "resume.tex"]);
+            const proc = Bun.spawn(["latexmk", "-xelatex", "-interaction=nonstopmode", "resume.tex"]);
             const { exitCode } = await proc.exited;
 
             if (exitCode !== 0) {

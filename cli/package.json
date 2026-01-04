@@ -1,0 +1,24 @@
+{
+    "name": "vishhh03",
+    "version": "1.0.0",
+    "description": "🚀 Vishal's Interactive Resume CLI - View my portfolio or launch the AI Resume Editor",
+    "bin": {
+        "vishhh03": "./index.js"
+    },
+    "keywords": [
+        "resume",
+        "cli",
+        "portfolio",
+        "developer",
+        "business-card"
+    ],
+    "author": "Vishal",
+    "license": "MIT",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/Vishhh03/Latex-Resume"
+    },
+    "engines": {
+        "node": ">=14"
+    }
+}
