@@ -201,7 +201,8 @@ new Elysia()
             const err = await new Response(proc.stderr).text();
             const { exitCode } = await proc.exited;
 
-            if (exitCode !== 0) {
+            // Exit code 0 = success, 1 = warnings only (still success), >= 2 = error
+            if (exitCode >= 2) {
                 set.status = 400;
                 return {
                     error: "LaTeX Compilation Error",
