@@ -1,19 +1,19 @@
 # =============================================================================
 # Stage 1: Build Next.js Frontend (Static Export)
 # =============================================================================
-FROM oven/bun:latest AS frontend
+FROM node:20-slim AS frontend
 
 WORKDIR /frontend
 
 # Install dependencies first (better caching)
-COPY web/package.json web/bun.lock* ./
-RUN bun install --frozen-lockfile || bun install
+COPY web/package.json ./
+RUN npm install
 
 # Copy source and build
-COPY web/ ./
+COPY web/ .
 
 # Build static export
-RUN bun run build
+RUN npm run build
 
 # =============================================================================
 # Stage 2: Production Runtime
