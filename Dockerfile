@@ -58,7 +58,8 @@ COPY resume.tex .
 # Copy built frontend (static files)
 COPY --from=frontend /frontend/out ./public
 
-# Skip pre-compilation (done at runtime on first request)
+# Pre-compile resume (with verbose output for debugging)
+RUN pdflatex -interaction=nonstopmode resume.tex || (cat resume.log && exit 1)
 
 # Initialize git repo (required for commit functionality)
 RUN git init && \
