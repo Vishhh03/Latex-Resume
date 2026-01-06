@@ -86,6 +86,9 @@ async function wakeAndOpen() {
     const TIMEOUT_MS = 180000;     // 3 minute total timeout
 
     let attempts = 0;
+    let spinnerIdx = 0;
+    let statusMessage = 'Booting...';
+    let done = false;
     const startTime = Date.now();
 
     console.log(`\n${c.yellow}Waking up the Resume Engine on AWS ECS...${c.reset}`);
@@ -97,33 +100,47 @@ async function wakeAndOpen() {
         return;
     }
 
+    // Timer that updates the display every second (independent of polling)
+    const displayTimer = setInterval(() => {
+        if (done) return;
+        spinnerIdx++;
+        const elapsed = Math.floor((Date.now() - startTime) / 1000);
+        process.stdout.write(`\r${c.cyan}${spinner[spinnerIdx % spinner.length]} ${statusMessage} (${elapsed}s)${c.reset}   `);
+    }, 1000);
+
     try {
         while (attempts < MAX_RETRIES && (Date.now() - startTime) < TIMEOUT_MS) {
             attempts++;
-            const elapsed = Math.floor((Date.now() - startTime) / 1000);
-            process.stdout.write(`\r${c.cyan}${spinner[attempts % spinner.length]} Checking status... (${elapsed}s)${c.reset}  `);
 
             const response = await httpGet(CONFIG.wakeUpUrl);
 
             if (response.status === 'ready') {
+                done = true;
+                clearInterval(displayTimer);
                 console.log(`\r${c.green}Backend is ready!${c.reset}                         `);
                 console.log(`\n${c.magenta}Opening: ${c.bold}${response.url}${c.reset}\n`);
                 openUrl(response.url);
                 return;
             } else if (response.status === 'error') {
+                done = true;
+                clearInterval(displayTimer);
                 console.log(`\r${c.yellow}${response.message}${c.reset}                         \n`);
                 return;
             } else {
-                process.stdout.write(`\r${c.cyan}${spinner[attempts % spinner.length]} ${response.message || 'Booting...'} (${elapsed}s)${c.reset}  `);
+                statusMessage = response.message || 'Booting...';
                 await sleep(POLL_INTERVAL);
             }
         }
 
         // Timeout reached
+        done = true;
+        clearInterval(displayTimer);
         console.log(`\r${c.yellow}Timeout: ECS is still starting up.${c.reset}                    `);
         console.log(`${c.dim}Try again in a minute, or check AWS Console.${c.reset}\n`);
 
     } catch (err) {
+        done = true;
+        clearInterval(displayTimer);
         console.log(`\r${c.yellow}Connection error: ${err.message}${c.reset}\n`);
     }
 }

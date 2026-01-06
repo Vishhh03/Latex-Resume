@@ -58,6 +58,13 @@ COPY resume.tex .
 # Copy built frontend (static files)
 COPY --from=frontend /frontend/out ./public
 
+# Initialize git repo (required for commit functionality)
+RUN git init && \
+    git config user.email "vishshaji03@gmail.com" && \
+    git config user.name "Vishal Shaji" && \
+    git add resume.tex && \
+    git commit -m "Initial resume"
+
 # Pre-compile resume to cache format files (pdflatex is faster)
 RUN latexmk -pdf -interaction=nonstopmode resume.tex && latexmk -c
 

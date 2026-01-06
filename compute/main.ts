@@ -322,12 +322,23 @@ new Elysia()
             patches.forEach((p: any) => { tex = tex.split(p.search).join(p.replace); });
 
             await Bun.write("resume.tex", tex);
-            const proc = Bun.spawn(["latexmk", "-pdf", "-interaction=nonstopmode", "resume.tex"]);
+            const proc = Bun.spawn(["latexmk", "-pdf", "-interaction=nonstopmode", "resume.tex"], {
+                stdout: "pipe",
+                stderr: "pipe",
+            });
+            const stdout = await new Response(proc.stdout).text();
+            const stderr = await new Response(proc.stderr).text();
             const { exitCode } = await proc.exited;
 
             if (exitCode !== 0) {
+                // Try to extract the actual error from the log
+                const errorMatch = stdout.match(/! .+/g) || stderr.match(/! .+/g);
                 set.status = 500;
-                return { error: "Compilation failed after patch" };
+                return {
+                    error: "Compilation failed after patch",
+                    details: errorMatch ? errorMatch.join('\n') : "Check LaTeX syntax",
+                    logs: (stdout + stderr).slice(-2000) // Last 2KB of logs
+                };
             }
 
             // Return JSON so frontend can handle state (Undo/Redo)
