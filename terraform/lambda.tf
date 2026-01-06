@@ -65,3 +65,37 @@ resource "aws_lambda_function_url" "stop_url" {
     allow_methods     = ["*"]
   }
 }
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# Budget Kill Lambda - Stops everything when budget is exceeded
+# ═══════════════════════════════════════════════════════════════════════════════
+data "archive_file" "budget_kill_zip" {
+  type        = "zip"
+  source_file = "${path.module}/../lambda_src/budget_kill.py"
+  output_path = "${path.module}/budget_kill.zip"
+}
+
+resource "aws_lambda_function" "budget_kill" {
+  function_name    = "resume-budget-kill"
+  role             = aws_iam_role.budget_kill_role.arn
+  handler          = "budget_kill.handler"
+  runtime          = "python3.12"
+  filename         = data.archive_file.budget_kill_zip.output_path
+  source_code_hash = data.archive_file.budget_kill_zip.output_base64sha256
+  timeout          = 30
+  
+  environment {
+    variables = {
+      CLUSTER_NAME         = aws_ecs_cluster.main.name
+      WAKEUP_FUNCTION_NAME = aws_lambda_function.wakeup.function_name
+    }
+  }
+}
+
+resource "aws_lambda_permission" "sns" {
+  statement_id  = "AllowExecutionFromSNS"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.budget_kill.function_name
+  principal     = "sns.amazonaws.com"
+  source_arn    = aws_sns_topic.budget_alerts.arn
+}

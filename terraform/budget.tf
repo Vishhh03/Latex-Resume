@@ -17,6 +17,7 @@ resource "aws_budgets_budget" "monthly_cost" {
     threshold_type             = "PERCENTAGE"
     notification_type          = "ACTUAL"
     subscriber_email_addresses = [var.budget_alert_email]
+    subscriber_sns_topic_arns  = [aws_sns_topic.budget_alerts.arn]
   }
 
   # Alert if forecasted to exceed 100% ($5.00)
@@ -26,5 +27,6 @@ resource "aws_budgets_budget" "monthly_cost" {
     threshold_type             = "PERCENTAGE"
     notification_type          = "FORECASTED"
     subscriber_email_addresses = [var.budget_alert_email]
+    subscriber_sns_topic_arns  = [aws_sns_topic.budget_alerts.arn]
   }
 }

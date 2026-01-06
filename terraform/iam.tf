@@ -50,3 +50,22 @@ resource "aws_iam_role_policy" "wakeup_policy" {
     ]
   })
 }
+
+# Budget Kill Role
+resource "aws_iam_role" "budget_kill_role" {
+  name = "resume_budget_kill_role"
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17", Statement = [{ Action = "sts:AssumeRole", Effect = "Allow", Principal = { Service = "lambda.amazonaws.com" } }]
+  })
+}
+
+resource "aws_iam_role_policy" "budget_kill_policy" {
+  role = aws_iam_role.budget_kill_role.id
+  policy = jsonencode({
+    Version = "2012-10-17", Statement = [
+      { Action = ["ecs:StopTask", "ecs:ListTasks", "ecs:DescribeTasks"], Effect = "Allow", Resource = "*" },
+      { Action = ["lambda:PutFunctionConcurrency"], Effect = "Allow", Resource = "*" }, # Needs to update other lambdas
+      { Action = ["logs:CreateLogGroup", "logs:CreateLogStream", "logs:PutLogEvents"], Effect = "Allow", Resource = "*" }
+    ]
+  })
+}
