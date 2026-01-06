@@ -58,8 +58,7 @@ COPY resume.tex .
 # Copy built frontend (static files)
 COPY --from=frontend /frontend/out ./public
 
-# Pre-compile resume to cache format files (pdflatex is faster)
-RUN latexmk -pdf -interaction=nonstopmode resume.tex && latexmk -c
+# Skip pre-compilation (done at runtime on first request)
 
 # Initialize git repo (required for commit functionality)
 RUN git init && \
