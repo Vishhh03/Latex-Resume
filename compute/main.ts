@@ -318,11 +318,19 @@ new Elysia()
                     messages: [
                         {
                             role: "system",
-                            content: "You are a LaTeX Architect. You generate JSON patches to modify LaTeX resumes. Return ONLY raw JSON, no markdown, no explanation."
+                            content: `You are a LaTeX resume editor. Generate JSON patches to modify the resume.
+
+CRITICAL RULES:
+1. Return ONLY raw JSON - no markdown, no explanation, no code blocks
+2. The "search" field must be an EXACT substring from the current LaTeX
+3. Escape special characters: $ as \\$, % as \\%, & as \\&, # as \\#
+4. Use \\textbf{} for bold, \\textit{} for italic, \\url{} for links
+5. Keep the same document structure (\\cventry, \\cvitem, \\begin{itemize}...)
+6. Never add packages or change preamble unless specifically asked`
                         },
                         {
                             role: "user",
-                            content: `Current LaTeX:\n\`\`\`latex\n${tex}\n\`\`\`\n\nInstruction: ${body.instruction}\nContext: ${body.job_description || "N/A"}\n\nResponse format: { "patches": [{ "search": "exact string", "replace": "new string" }] }`
+                            content: `Current LaTeX:\n\`\`\`\n${tex}\n\`\`\`\n\nInstruction: ${body.instruction}\nJob Context: ${body.job_description || "N/A"}\n\nRespond with: { "patches": [{ "search": "exact existing text", "replace": "new text" }] }`
                         }
                     ],
                     max_tokens: 4096,
