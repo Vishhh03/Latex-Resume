@@ -50,22 +50,12 @@ jobs:
       - name: Build PDF
         run: tectonic resume.tex
 
-      # Push PDF to orphan branch (contains ONLY the PDF)
-      - name: Push PDF to pdf-output branch
-        run: |
-          # Save the PDF
-          cp resume.pdf /tmp/resume.pdf
-          
-          # Create orphan branch with only the PDF
-          git checkout --orphan pdf-output-temp
-          git rm -rf .
-          cp /tmp/resume.pdf resume.pdf
-          git add resume.pdf
-          
-          # Configure git and commit
-          git config user.name "GitHub Actions"
-          git config user.email "actions@github.com"
-          git commit -m "Update resume PDF"
-          
-          # Force push to pdf-output branch
-          git push origin pdf-output-temp:pdf-output --force
+      - name: Create Release with PDF
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: latest
+          name: Latest Resume
+          files: resume.pdf
+          body: "Auto-generated resume PDF from ${{ github.sha }}"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
