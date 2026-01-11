@@ -23,6 +23,18 @@ const bedrock = new BedrockRuntimeClient({ region: "us-east-1" });
 // DNS is now handled by Cloudflare Tunnel - no sync needed
 
 /**
+ * 1. LOGGING HELPER
+ */
+function log(module: string, message: string, data?: any) {
+    const time = new Date().toISOString();
+    if (data) {
+        console.log(`[${time}] [${module}] ${message}`, JSON.stringify(data, null, 2));
+    } else {
+        console.log(`[${time}] [${module}] ${message}`);
+    }
+}
+
+/**
  * 2. SPEND MANAGEMENT
  */
 async function checkSpend() {
@@ -56,7 +68,7 @@ setInterval(async () => {
     try { await logSpend(COST_PER_MIN_ECS); } catch (e) { }
 
     if (Date.now() - lastActivity > IDLE_TIMEOUT) {
-        console.log("[System] Idle timeout. Terminating Fargate Task...");
+        log("System", "Idle timeout. Terminating Fargate Task...");
         const meta = await fetch("http://169.254.170.2/v2/metadata").then(r => r.json());
         await ecs.send(new StopTaskCommand({
             cluster: process.env.CLUSTER_NAME,
@@ -69,9 +81,13 @@ setInterval(async () => {
  * 4. GIT HELPERS
  */
 async function initRepo() {
-    if (!process.env.GITHUB_TOKEN) return;
+    if (!process.env.GITHUB_TOKEN) {
+        log("Git", "No GITHUB_TOKEN found. Skipping Git init.");
+        return;
+    }
     const remote = `https://${process.env.GITHUB_TOKEN}@github.com/${process.env.REPO_OWNER}/${process.env.REPO_NAME}.git`;
 
+    log("Git", "Initializing repository...");
     Bun.spawnSync(["git", "init"]);
     Bun.spawnSync(["git", "config", "user.email", "bot@terraless.io"]);
     Bun.spawnSync(["git", "config", "user.name", "QwenArchitect"]);
@@ -79,12 +95,19 @@ async function initRepo() {
         Bun.spawnSync(["git", "remote", "add", "origin", remote]);
     } catch { } // Remote might exist
 
-    console.log("[Git] Syncing main...");
-    Bun.spawnSync(["git", "fetch", "origin", "main"]);
-    Bun.spawnSync(["git", "reset", "--hard", "origin/main"]);
+    log("Git", "Syncing main from origin...");
+    const fetchProc = Bun.spawnSync(["git", "fetch", "origin", "main"]);
+    if (fetchProc.exitCode !== 0) {
+        log("Git", "Fetch failed", { stderr: new TextDecoder().decode(fetchProc.stderr) });
+    }
+
+    const resetProc = Bun.spawnSync(["git", "reset", "--hard", "origin/main"]);
+    if (resetProc.exitCode !== 0) {
+        log("Git", "Reset failed", { stderr: new TextDecoder().decode(resetProc.stderr) });
+    }
 
     // Compile PDF on startup so /pdf works immediately
-    console.log("[Init] Compiling initial PDF...");
+    log("Init", "Compiling initial PDF...");
     const proc = Bun.spawn(["latexmk", "-xelatex", "-interaction=nonstopmode", "resume.tex"], {
         stdout: "pipe",
         stderr: "pipe",
@@ -94,50 +117,52 @@ async function initRepo() {
     const { exitCode } = await proc.exited;
 
     if (exitCode !== 0) {
-        console.error("[Init] Initial compilation failed.");
-        console.error("STDOUT:", stdout);
-        console.error("STDERR:", stderr);
+        log("Init", "Initial compilation failed.", { stdout, stderr });
     } else {
-        console.log("[Init] Initial compilation successful.");
+        log("Init", "Initial compilation successful.");
     }
 }
 
 async function commitToGit(msg: string): Promise<{ pushed: boolean; message: string }> {
-    console.log("[Git] Starting commit...");
+    log("Git", "Starting commit sequence", { message: msg });
 
     // Stage changes
     const add = Bun.spawnSync(["git", "add", "resume.tex"]);
-    console.log("[Git] Add exit:", add.exitCode);
+    if (add.exitCode !== 0) {
+        const err = new TextDecoder().decode(add.stderr);
+        log("Git", "Add failed", { stderr: err });
+        throw new Error("Git add failed: " + err);
+    }
 
     // Check if there are changes to commit
     const status = Bun.spawnSync(["git", "status", "--porcelain"]);
     const statusOutput = new TextDecoder().decode(status.stdout);
-    console.log("[Git] Status:", statusOutput || "(no changes)");
+    log("Git", "Status check", { output: statusOutput });
 
     if (!statusOutput.trim()) {
-        console.log("[Git] No changes to commit");
+        log("Git", "No changes to commit, skipping.");
         return { pushed: false, message: "No changes to commit" };
     }
 
     // Commit
     const commit = Bun.spawnSync(["git", "commit", "-m", msg]);
-    console.log("[Git] Commit exit:", commit.exitCode);
     if (commit.exitCode !== 0) {
         const err = new TextDecoder().decode(commit.stderr);
-        console.error("[Git] Commit error:", err);
+        log("Git", "Commit failed", { stderr: err });
         throw new Error("Commit failed: " + err);
     }
 
     // Push
+    log("Git", "Pushing to origin...");
     const push = Bun.spawnSync(["git", "push", "origin", "main"]);
-    console.log("[Git] Push exit:", push.exitCode);
     if (push.exitCode !== 0) {
-        const err = new TextDecoder().decode(push.stderr);
-        console.error("[Git] Push error:", err);
-        throw new Error("Push failed: " + err);
+        const stdout = new TextDecoder().decode(push.stdout);
+        const stderr = new TextDecoder().decode(push.stderr);
+        log("Git", "Push failed", { stdout, stderr });
+        throw new Error("Push failed: " + stderr);
     }
 
-    console.log("[Git] Successfully pushed to GitHub");
+    log("Git", "Successfully pushed to GitHub");
     return { pushed: true, message: "Changes pushed to GitHub" };
 }
 
@@ -182,7 +207,7 @@ new Elysia()
         }
 
         // PDF doesn't exist - compile it now
-        console.log("[/pdf] PDF not found, compiling on-demand...");
+        log("PDF", "PDF not found, compiling on-demand...");
         const proc = Bun.spawn(["latexmk", "-xelatex", "-interaction=nonstopmode", "resume.tex"], {
             stdout: "pipe",
             stderr: "pipe",
@@ -191,7 +216,7 @@ new Elysia()
 
         const compiled = Bun.file("resume.pdf");
         if (await compiled.exists()) {
-            console.log("[/pdf] On-demand compilation successful");
+            log("PDF", "On-demand compilation successful");
             return new Response(compiled, {
                 headers: { 'Content-Type': 'application/pdf' }
             });
@@ -236,7 +261,7 @@ new Elysia()
     })
 
     .post("/stop", async () => {
-        console.log("[System] Stop request received. Terminating Fargate Task...");
+        log("System", "Stop request received. Terminating Fargate Task...");
         try {
             const meta = await fetch("http://169.254.170.2/v2/metadata").then(r => r.json());
             await ecs.send(new StopTaskCommand({
@@ -302,11 +327,13 @@ new Elysia()
 
     .post("/update", async ({ body, set }: any) => {
         if (!(await checkSpend())) {
+            log("AI", "Quota exceeded", { limit: SPEND_LIMIT });
             set.status = 402;
             return { error: "Daily budget exceeded" };
         }
 
         let tex = await Bun.file("resume.tex").text();
+        log("AI", "Processing update request", { instruction: body.instruction });
 
         let resBody;
         try {
@@ -334,6 +361,8 @@ CRITICAL RULES:
                 temperature: 0.1
             });
 
+            log("AI", "Sending payload to Bedrock", { payloadLength: payload.length });
+
             const response = await bedrock.send(new InvokeModelCommand({
                 modelId: "qwen.qwen3-32b-v1:0",
                 contentType: "application/json",
@@ -344,24 +373,32 @@ CRITICAL RULES:
             // Cost Accounting (placeholder - actual token counts from response if available)
             await logSpend(0.001); // Approximate cost per request
 
-            resBody = JSON.parse(new TextDecoder().decode(response.body));
+            const rawBody = new TextDecoder().decode(response.body);
+            log("AI", "Received Bedrock response", { rawResponseLength: rawBody.length });
+
+            resBody = JSON.parse(rawBody);
         } catch (bedrockErr: any) {
-            console.error("[Update] Bedrock error:", bedrockErr);
+            log("AI", "Bedrock interaction failed", { error: bedrockErr.message });
             set.status = 500;
             return { error: "AI service error: " + (bedrockErr.message || String(bedrockErr)) };
         }
 
         // OpenAI-compatible format: choices[0].message.content
         const generated = resBody.choices?.[0]?.message?.content || resBody.output?.text || resBody.generation || "";
+        log("AI", "Parsed generation", { generated });
+
         const jsonMatch = generated.match(/\{[\s\S]*\}/);
 
         if (!jsonMatch) {
+            log("AI", "Invalid JSON in response", { generated });
             set.status = 500;
             return { error: "AI response was not valid JSON", raw: generated };
         }
 
         try {
             const { patches } = JSON.parse(jsonMatch[0]);
+            log("AI", "Applying patches", { count: patches.length, patches });
+
             patches.forEach((p: any) => { tex = tex.split(p.search).join(p.replace); });
 
             await Bun.write("resume.tex", tex);
@@ -376,6 +413,7 @@ CRITICAL RULES:
             if (exitCode !== 0) {
                 // Try to extract the actual error from the log
                 const errorMatch = stdout.match(/! .+/g) || stderr.match(/! .+/g);
+                log("AI", "Compilation failed after patch", { stdout: stdout.slice(-500), stderr: stderr.slice(-500) });
                 set.status = 500;
                 return {
                     error: "Compilation failed after patch",
@@ -383,6 +421,8 @@ CRITICAL RULES:
                     logs: (stdout + stderr).slice(-2000) // Last 2KB of logs
                 };
             }
+
+            log("AI", "Update successful");
 
             // Return JSON so frontend can handle state (Undo/Redo)
             return {
@@ -392,6 +432,7 @@ CRITICAL RULES:
             };
 
         } catch (e) {
+            log("AI", "Patch application failed", { error: String(e) });
             set.status = 500;
             return { error: "Failed to apply patches: " + String(e) };
         }
@@ -453,4 +494,4 @@ CRITICAL RULES:
 
 // Ignition
 await initRepo();
-console.log("🚀 Resume Backend Online | Port 8000");
+log("System", "Resume Backend Online | Port 8000");
