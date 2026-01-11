@@ -91,6 +91,11 @@ async function initRepo() {
     Bun.spawnSync(["git", "init"]);
     Bun.spawnSync(["git", "config", "user.email", "bot@terraless.io"]);
     Bun.spawnSync(["git", "config", "user.name", "QwenArchitect"]);
+
+    // Ensure we are on 'main' branch locally
+    log("Git", "Enforcing local branch 'main'");
+    Bun.spawnSync(["git", "checkout", "-B", "main"]);
+
     try {
         Bun.spawnSync(["git", "remote", "add", "origin", remote]);
     } catch { } // Remote might exist
@@ -399,7 +404,25 @@ CRITICAL RULES:
             const { patches } = JSON.parse(jsonMatch[0]);
             log("AI", "Applying patches", { count: patches.length, patches });
 
-            patches.forEach((p: any) => { tex = tex.split(p.search).join(p.replace); });
+            // Apply patches with uniqueness check
+            for (const p of patches) {
+                // Escape special regex characters in search string
+                const escapeRegExp = (str: string) => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                const searchRegex = new RegExp(escapeRegExp(p.search), 'g');
+
+                const matches = tex.match(searchRegex);
+                const count = matches ? matches.length : 0;
+
+                if (count === 0) {
+                    throw new Error(`Text not found: "${p.search.substring(0, 50)}..."`);
+                }
+                if (count > 1) {
+                    throw new Error(`Ambiguous match: Found ${count} occurrences of "${p.search.substring(0, 50)}...". Aborting to prevent corruption.`);
+                }
+
+                // Safe to replace
+                tex = tex.replace(p.search, p.replace);
+            }
 
             await Bun.write("resume.tex", tex);
             const proc = Bun.spawn(["latexmk", "-xelatex", "-interaction=nonstopmode", "resume.tex"], {
