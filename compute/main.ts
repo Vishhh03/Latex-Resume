@@ -111,7 +111,10 @@ async function initRepo() {
         log("Git", "Reset failed", { stderr: new TextDecoder().decode(resetProc.stderr) });
     }
 
-    // Compile PDF on startup so /pdf works immediately
+
+}
+
+async function compilePdf() {
     log("Init", "Compiling initial PDF...");
     const proc = Bun.spawn(["latexmk", "-xelatex", "-interaction=nonstopmode", "resume.tex"], {
         stdout: "pipe",
@@ -517,4 +520,5 @@ CRITICAL RULES:
 
 // Ignition
 await initRepo();
+await compilePdf();
 log("System", "Resume Backend Online | Port 8000");
