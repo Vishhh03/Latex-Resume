@@ -349,13 +349,16 @@ new Elysia()
             const payload = JSON.stringify({
                 messages: [
                     {
-                        role: "system",
                         content: `You are a LaTeX resume editor. Generate JSON patches to modify the resume.
 
 CRITICAL RULES:
 1. Return ONLY raw JSON - no markdown, no explanation, no code blocks
 2. The "search" field must be an EXACT substring from the current LaTeX
-3. Escape special characters: $ as \\$, % as \\%, & as \\&, # as \\#
+3. JSON ESCAPING: You MUST double-escape backslashes in the JSON string.
+   - Wrong: "replace": "Price: \$100" (Invalid JSON)
+   - Right: "replace": "Price: \\$100" (Valid JSON)
+   - Wrong: "replace": "Items: \&, \#" (Invalid JSON)
+   - Right: "replace": "Items: \\&, \\#" (Valid JSON)
 4. Use \\textbf{} for bold, \\textit{} for italic, \\url{} for links
 5. Keep the same document structure (\\cventry, \\cvitem, \\begin{itemize}...)
 6. Never add packages or change preamble unless specifically asked`
@@ -403,8 +406,13 @@ CRITICAL RULES:
             return { error: "AI response was not valid JSON", raw: generated };
         }
 
+        let jsonStr = jsonMatch[0];
+        // Defensive repair: Fix common invalid escapes (e.g. \& -> \\&)
+        // Replaces any backslash NOT followed by valid JSON escape chars with double backslash
+        jsonStr = jsonStr.replace(/\\([^"\\/bfnrtu])/g, "\\\\$1");
+
         try {
-            const { patches } = JSON.parse(jsonMatch[0]);
+            const { patches } = JSON.parse(jsonStr);
             log("AI", "Applying patches", { count: patches.length, patches });
 
             // Apply patches with uniqueness check
