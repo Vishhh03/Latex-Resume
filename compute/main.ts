@@ -349,6 +349,7 @@ new Elysia()
             const payload = JSON.stringify({
                 messages: [
                     {
+                        role: "system",
                         content: `You are a LaTeX resume editor. Generate JSON patches to modify the resume.
 
 CRITICAL RULES:
