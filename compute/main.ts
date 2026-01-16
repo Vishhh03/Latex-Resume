@@ -398,6 +398,7 @@ CRITICAL RULES:
         // OpenAI-compatible format: choices[0].message.content
         const generated = resBody.choices?.[0]?.message?.content || resBody.output?.text || resBody.generation || "";
         log("AI", "Parsed generation", { generated });
+        await Bun.write("last_ai_response.txt", generated);
 
         const jsonMatch = generated.match(/\{[\s\S]*\}/);
 
@@ -480,8 +481,16 @@ CRITICAL RULES:
         } catch (e) {
             log("AI", "Patch application failed", { error: String(e) });
             set.status = 500;
-            return { error: "Failed to apply patches: " + String(e) };
+            return { error: "Failed to apply patches: " + String(e), raw: jsonStr };
         }
+    })
+
+    .get("/debug/last", async () => {
+        const file = Bun.file("last_ai_response.txt");
+        if (await file.exists()) {
+            return new Response(file);
+        }
+        return { error: "No AI response recorded yet" };
     })
 
     // Static file serving (fallback for frontend)
