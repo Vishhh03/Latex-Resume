@@ -408,9 +408,12 @@ CRITICAL RULES:
         }
 
         let jsonStr = jsonMatch[0];
-        // Defensive repair: Fix common invalid escapes (e.g. \& -> \\&)
+        // Defensive repair: Fix common invalid escapes (e.g. \& -> \\&, \$ -> \\$)
+        // Build timestamp: 2026-01-16T19:25 - forces redeploy
         // Replaces any backslash NOT followed by valid JSON escape chars with double backslash
+        log("AI", "Raw JSON before repair", { jsonStr: jsonStr.substring(0, 500) });
         jsonStr = jsonStr.replace(/\\([^"\\/bfnrtu])/g, (match, char) => "\\\\" + char);
+        log("AI", "JSON after repair", { jsonStr: jsonStr.substring(0, 500) });
 
         try {
             const { patches } = JSON.parse(jsonStr);
