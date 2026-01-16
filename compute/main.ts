@@ -410,7 +410,7 @@ CRITICAL RULES:
         let jsonStr = jsonMatch[0];
         // Defensive repair: Fix common invalid escapes (e.g. \& -> \\&)
         // Replaces any backslash NOT followed by valid JSON escape chars with double backslash
-        jsonStr = jsonStr.replace(/\\([^"\\/bfnrtu])/g, "\\\\$1");
+        jsonStr = jsonStr.replace(/\\([^"\\/bfnrtu])/g, (match, char) => "\\\\" + char);
 
         try {
             const { patches } = JSON.parse(jsonStr);
