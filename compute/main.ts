@@ -416,6 +416,10 @@ CRITICAL RULES:
             const { patches } = JSON.parse(jsonStr);
             log("AI", "Applying patches", { count: patches.length, patches });
 
+
+            // Store original for revert on failure
+            const originalTex = tex;
+
             // Apply patches with uniqueness check
             for (const p of patches) {
                 // Escape special regex characters in search string
@@ -446,18 +450,22 @@ CRITICAL RULES:
             const { exitCode } = await proc.exited;
 
             if (exitCode !== 0) {
+                // REVERT LOGIC
+                log("AI", "Compilation failed. Reverting changes...", { stdout: stdout.slice(-200), stderr: stderr.slice(-200) });
+                await Bun.write("resume.tex", originalTex);
+
                 // Try to extract the actual error from the log
                 const errorMatch = stdout.match(/! .+/g) || stderr.match(/! .+/g);
-                log("AI", "Compilation failed after patch", { stdout: stdout.slice(-500), stderr: stderr.slice(-500) });
                 set.status = 500;
                 return {
-                    error: "Compilation failed after patch",
+                    error: "Compilation failed after patch (Changes Reverted)",
                     details: errorMatch ? errorMatch.join('\n') : "Check LaTeX syntax",
-                    logs: (stdout + stderr).slice(-2000) // Last 2KB of logs
+                    logs: (stdout + stderr).slice(-2000)
                 };
             }
 
             log("AI", "Update successful");
+
 
             // Return JSON so frontend can handle state (Undo/Redo)
             return {
