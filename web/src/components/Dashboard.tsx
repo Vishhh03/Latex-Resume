@@ -12,12 +12,30 @@ interface DashboardProps {
     apiUrl: string;
 }
 
+interface Toast {
+    id: number;
+    message: string;
+    type: 'success' | 'error' | 'info';
+}
+
 export default function Dashboard({ apiUrl }: DashboardProps) {
     const [activeTab, setActiveTab] = useState<'ai' | 'manual'>('ai');
 
     // -- State Management --
     const [latex, setLatex] = useState('');
     const [pdfUrl, setPdfUrl] = useState<string | null>(null);
+
+    // Toast Notifications
+    const [toasts, setToasts] = useState<Toast[]>([]);
+    const showToast = (message: string, type: Toast['type'] = 'info') => {
+        const id = Date.now();
+        setToasts(prev => [...prev, { id, message, type }]);
+        setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 4000);
+    };
+
+    // Stop Confirmation Modal
+    const [isStopModalOpen, setIsStopModalOpen] = useState(false);
+    const [isStopping, setIsStopping] = useState(false);
 
     // Auto-fetch PDF and LaTeX on mount (same-origin API)
     useEffect(() => {
@@ -102,18 +120,78 @@ export default function Dashboard({ apiUrl }: DashboardProps) {
         setIsCommitting(true);
         try {
             await commitChanges(commitMsg, apiUrl);
-            alert("Changes committed to GitHub!");
+            showToast('✓ Changes pushed to GitHub!', 'success');
             setCommitMsg('');
             setIsCommitOpen(false);
         } catch (e) {
-            alert("Commit failed: " + e);
+            showToast('Push failed: ' + e, 'error');
         } finally {
             setIsCommitting(false);
         }
     };
 
+    const handleStop = async () => {
+        setIsStopping(true);
+        try {
+            const res = await fetch('/stop', { method: 'POST' });
+            const data = await res.json();
+            showToast(data.message || 'Container stopping...', 'info');
+            setIsStopModalOpen(false);
+        } catch {
+            showToast('Stop request sent', 'info');
+            setIsStopModalOpen(false);
+        } finally {
+            setIsStopping(false);
+        }
+    };
+
     return (
         <div className="flex h-[calc(100vh-100px)] w-full max-w-7xl mx-auto gap-4 p-4 relative">
+
+            {/* Toast Notifications */}
+            <div className="fixed top-4 right-4 z-[100] flex flex-col gap-2">
+                {toasts.map(toast => (
+                    <div
+                        key={toast.id}
+                        className={`px-4 py-3 rounded-lg shadow-lg backdrop-blur-sm animate-in slide-in-from-right fade-in duration-300 ${toast.type === 'success' ? 'bg-green-600/90 text-white' :
+                                toast.type === 'error' ? 'bg-red-600/90 text-white' :
+                                    'bg-zinc-800/90 text-white border border-zinc-700'
+                            }`}
+                    >
+                        <p className="text-sm font-medium">{toast.message}</p>
+                    </div>
+                ))}
+            </div>
+
+            {/* Stop Confirmation Modal */}
+            {isStopModalOpen && (
+                <div className="fixed inset-0 z-[90] bg-black/60 backdrop-blur-sm flex items-center justify-center animate-in fade-in duration-200">
+                    <div className="bg-zinc-900 border border-zinc-700 rounded-xl p-6 max-w-sm w-full mx-4 shadow-2xl animate-in zoom-in-95 duration-200">
+                        <div className="text-center mb-4">
+                            <div className="text-4xl mb-3">⚠️</div>
+                            <h3 className="text-xl font-bold text-white mb-2">Stop Container?</h3>
+                            <p className="text-zinc-400 text-sm">
+                                This will shut down the ECS backend. You&apos;ll need to run <code className="bg-zinc-800 px-1.5 py-0.5 rounded text-xs">npx latex-resume-cli</code> to restart.
+                            </p>
+                        </div>
+                        <div className="flex gap-3 justify-center">
+                            <button
+                                onClick={() => setIsStopModalOpen(false)}
+                                className="px-4 py-2 bg-zinc-800 text-white rounded-lg hover:bg-zinc-700 transition-colors text-sm"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleStop}
+                                disabled={isStopping}
+                                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-500 transition-colors text-sm disabled:opacity-50"
+                            >
+                                {isStopping ? 'Stopping...' : 'Yes, Stop'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Disconnected Overlay */}
             {!isConnected && (
@@ -183,14 +261,7 @@ export default function Dashboard({ apiUrl }: DashboardProps) {
                             Tutorial
                         </Link>
                         <button
-                            onClick={() => {
-                                if (confirm('Stop the ECS container? This will shut down the backend.')) {
-                                    fetch('/stop', { method: 'POST' })
-                                        .then(r => r.json())
-                                        .then(data => alert(data.message || 'Container stopping...'))
-                                        .catch(() => alert('Stop request sent'));
-                                }
-                            }}
+                            onClick={() => setIsStopModalOpen(true)}
                             className="px-3 py-1 bg-red-600 text-white text-xs rounded hover:bg-red-500 transition-colors"
                             title="Stop ECS Container"
                         >
