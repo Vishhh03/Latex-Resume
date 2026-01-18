@@ -410,10 +410,19 @@ CRITICAL RULES:
 
         let jsonStr = jsonMatch[0];
         // Defensive repair: Fix common invalid escapes (e.g. \& -> \\&, \$ -> \\$)
-        // Build timestamp: 2026-01-16T19:25 - forces redeploy
-        // Replaces any backslash NOT followed by valid JSON escape chars with double backslash
+        // Build timestamp: 2026-01-19T01:05 - forces redeploy
+        // 
+        // JSON only allows these escape sequences: \", \\, \/, \b, \f, \n, \r, \t, \uXXXX
+        // LaTeX uses \$, \&, \#, \%, \_, \{, \} etc. which are INVALID in JSON.
+        // We need to double-escape them so they survive JSON.parse()
         log("AI", "Raw JSON before repair", { jsonStr: jsonStr.substring(0, 500) });
-        jsonStr = jsonStr.replace(/\\([^"\\/bfnrtu])/g, (match, char) => "\\\\" + char);
+
+        // Replace any backslash NOT followed by valid JSON escape chars with double backslash
+        // Valid JSON escapes: " \ / b f n r t u
+        // The issue: \$ -> \\$ still has $ after backslash which is invalid
+        // Solution: Use a function that properly handles the replacement
+        jsonStr = jsonStr.replace(/\\(?!["\\/bfnrtu])/g, "\\\\");
+
         log("AI", "JSON after repair", { jsonStr: jsonStr.substring(0, 500) });
 
         try {
