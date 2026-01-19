@@ -354,15 +354,14 @@ new Elysia()
 
 CRITICAL RULES:
 1. Return ONLY raw JSON - no markdown, no explanation, no code blocks
-2. The "search" field must be an EXACT substring from the current LaTeX
-3. JSON ESCAPING: You MUST double-escape backslashes in the JSON string.
-   - Wrong: "replace": "Price: \$100" (Invalid JSON)
-   - Right: "replace": "Price: \\$100" (Valid JSON)
-   - Wrong: "replace": "Items: \&, \#" (Invalid JSON)
-   - Right: "replace": "Items: \\&, \\#" (Valid JSON)
-4. Use \\textbf{} for bold, \\textit{} for italic, \\url{} for links
-5. Keep the same document structure (\\cventry, \\cvitem, \\begin{itemize}...)
-6. Never add packages or change preamble unless specifically asked`
+2. The "search" field must be an EXACT character-for-character copy from the LaTeX source
+3. IMPORTANT: The source contains \\\\[2mm] (line break with spacing). Copy it EXACTLY - do NOT change [ to $ or any other character!
+4. JSON ESCAPING: Double-escape backslashes for valid JSON.
+   - LaTeX \\\\[ becomes JSON "\\\\\\\\["
+   - LaTeX \\& becomes JSON "\\\\&"
+5. Use \\\\textbf{} for bold, \\\\textit{} for italic
+6. Keep document structure unchanged
+7. Never modify preamble unless asked`
                     },
                     {
                         role: "user",
@@ -442,8 +441,20 @@ CRITICAL RULES:
         log("AI", "JSON after repair", { jsonStr: jsonStr.substring(0, 500) });
 
         try {
-            const { patches } = JSON.parse(jsonStr);
-            log("AI", "Applying patches", { count: patches.length, patches });
+            let { patches } = JSON.parse(jsonStr);
+
+            // Post-process patches to fix known AI hallucinations
+            // The AI sometimes outputs $$ instead of [ when reading \\[2mm] sequences
+            patches = patches.map((p: any) => ({
+                search: p.search
+                    .replace(/\$\$/g, '[')  // Fix $$ -> [
+                    .replace(/\$([0-9])/g, '[$1'),  // Fix $2mm -> [2mm
+                replace: p.replace
+                    .replace(/\$\$/g, '[')  // Fix $$ -> [
+                    .replace(/\$([0-9])/g, '[$1'),  // Fix $2mm -> [2mm
+            }));
+
+            log("AI", "Applying patches (after hallucination fix)", { count: patches.length, patches });
 
 
             // Store original for revert on failure
