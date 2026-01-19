@@ -396,7 +396,7 @@ CRITICAL RULES:
 
         // OpenAI-compatible format: choices[0].message.content
         const generated = resBody.choices?.[0]?.message?.content || resBody.output?.text || resBody.generation || "";
-        log("AI", "Parsed generation", { generated });
+        log("AI", "Parsed generation", { length: generated.length });
         await Bun.write("last_ai_response.txt", generated);
 
         const jsonMatch = generated.match(/\{[\s\S]*\}/);
@@ -414,7 +414,7 @@ CRITICAL RULES:
         // JSON only allows these escape sequences: \", \\, \/, \b, \f, \n, \r, \t, \uXXXX
         // LaTeX uses \$, \&, \#, \%, \_, \{, \}, \[, \] etc. which are INVALID in JSON.
         // We need to double-escape them so they survive JSON.parse()
-        log("AI", "Raw JSON before repair", { jsonStr: jsonStr.substring(0, 500) });
+        log("AI", "Raw JSON before repair", { length: jsonStr.length });
 
         // Multi-pass repair strategy:
         // 1. First, handle already-escaped valid sequences (don't touch \\, \", \n, etc.)
@@ -438,7 +438,7 @@ CRITICAL RULES:
             return savedEscapes[parseInt(idx)];
         });
 
-        log("AI", "JSON after repair", { jsonStr: jsonStr.substring(0, 500) });
+        log("AI", "JSON after repair", { length: jsonStr.length });
 
         try {
             let { patches } = JSON.parse(jsonStr);
@@ -454,7 +454,7 @@ CRITICAL RULES:
                     .replace(/\$([0-9])/g, '[$1'),  // Fix $2mm -> [2mm
             }));
 
-            log("AI", "Applying patches (after hallucination fix)", { count: patches.length, patches });
+            log("AI", "Applying patches (after hallucination fix)", { count: patches.length });
 
 
             // Store original for revert on failure
