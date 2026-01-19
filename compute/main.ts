@@ -410,18 +410,34 @@ CRITICAL RULES:
 
         let jsonStr = jsonMatch[0];
         // Defensive repair: Fix common invalid escapes (e.g. \& -> \\&, \$ -> \\$)
-        // Build timestamp: 2026-01-19T01:05 - forces redeploy
+        // Build timestamp: 2026-01-19T22:05 - forces redeploy
         // 
         // JSON only allows these escape sequences: \", \\, \/, \b, \f, \n, \r, \t, \uXXXX
-        // LaTeX uses \$, \&, \#, \%, \_, \{, \} etc. which are INVALID in JSON.
+        // LaTeX uses \$, \&, \#, \%, \_, \{, \}, \[, \] etc. which are INVALID in JSON.
         // We need to double-escape them so they survive JSON.parse()
         log("AI", "Raw JSON before repair", { jsonStr: jsonStr.substring(0, 500) });
 
-        // Replace any backslash NOT followed by valid JSON escape chars with double backslash
-        // Valid JSON escapes: " \ / b f n r t u
-        // The issue: \$ -> \\$ still has $ after backslash which is invalid
-        // Solution: Use a function that properly handles the replacement
-        jsonStr = jsonStr.replace(/\\(?!["\\/bfnrtu])/g, "\\\\");
+        // Multi-pass repair strategy:
+        // 1. First, handle already-escaped valid sequences (don't touch \\, \", \n, etc.)
+        // 2. Then escape any remaining single backslashes before invalid chars
+
+        // Pass 1: Temporarily protect valid JSON escape sequences
+        const validEscapes = /\\(["\\/bfnrt]|u[0-9a-fA-F]{4})/g;
+        const placeholder = "\x00VALID_ESC\x00";
+        const savedEscapes: string[] = [];
+        jsonStr = jsonStr.replace(validEscapes, (match) => {
+            savedEscapes.push(match);
+            return `${placeholder}${savedEscapes.length - 1}${placeholder}`;
+        });
+
+        // Pass 2: Double-escape ALL remaining backslashes (they're all invalid JSON escapes)
+        // This catches \$, \&, \#, \%, \[, \], \{, \}, etc.
+        jsonStr = jsonStr.replace(/\\/g, "\\\\");
+
+        // Pass 3: Restore valid escapes
+        jsonStr = jsonStr.replace(new RegExp(`${placeholder}(\\d+)${placeholder}`, 'g'), (_, idx) => {
+            return savedEscapes[parseInt(idx)];
+        });
 
         log("AI", "JSON after repair", { jsonStr: jsonStr.substring(0, 500) });
 
