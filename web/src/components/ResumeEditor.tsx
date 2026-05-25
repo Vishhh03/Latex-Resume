@@ -7,9 +7,10 @@ interface ResumeEditorProps {
     setLatex: (val: string) => void;
     onPreviewUpdate: (url: string) => void;
     apiUrl: string;
+    version: string;
 }
 
-export default function ResumeEditor({ latex, setLatex, onPreviewUpdate, apiUrl }: ResumeEditorProps) {
+export default function ResumeEditor({ latex, setLatex, onPreviewUpdate, apiUrl, version }: ResumeEditorProps) {
     const [status, setStatus] = useState<'idle' | 'loading' | 'saving' | 'compiling'>('idle');
     const [autoCompile, setAutoCompile] = useState(true);
     const [errorLog, setErrorLog] = useState<string | null>(null);
@@ -82,7 +83,7 @@ export default function ResumeEditor({ latex, setLatex, onPreviewUpdate, apiUrl 
             const res = await fetch(`${apiUrl}/save`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ latex })
+                body: JSON.stringify({ latex, version })
             });
 
             if (res.ok) {

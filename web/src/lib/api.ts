@@ -24,7 +24,8 @@ export interface CommitResponse {
 export async function updateResume(
     instruction: string,
     job_description: string | undefined,
-    baseUrl: string
+    baseUrl: string,
+    version?: string
 ): Promise<UpdateResponse> {
     try {
         const response = await fetch(`${baseUrl}/update`, {
@@ -35,7 +36,8 @@ export async function updateResume(
             body: JSON.stringify({
                 instruction,
                 job_description,
-                commit: false
+                commit: false,
+                version
             }),
         });
 
@@ -63,13 +65,14 @@ export async function updateResume(
 
 export async function commitChanges(
     message: string,
-    baseUrl: string
+    baseUrl: string,
+    version?: string
 ): Promise<CommitResponse> {
     try {
         const response = await fetch(`${baseUrl}/commit`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ message })
+            body: JSON.stringify({ message, version })
         });
 
         const data = await response.json();

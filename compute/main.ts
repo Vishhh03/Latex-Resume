@@ -3,6 +3,7 @@ import { cors } from '@elysiajs/cors';
 import { ECSClient, StopTaskCommand } from "@aws-sdk/client-ecs";
 import { DynamoDBClient, GetItemCommand, UpdateItemCommand } from "@aws-sdk/client-dynamodb";
 import { BedrockRuntimeClient, InvokeModelCommand } from "@aws-sdk/client-bedrock-runtime";
+import * as fs from "fs";
 
 /**
  * CONFIGURATION & COST CONSTANTS
@@ -78,6 +79,25 @@ setInterval(async () => {
 }, 60000);
 
 /**
+ * 3.5 VERSION HELPERS
+ */
+function getResumeFilename(version?: string): string {
+    if (!version || version === "default" || version === "main") {
+        return "resume.tex";
+    }
+    const sanitized = version.replace(/[^a-zA-Z0-9_-]/g, "");
+    return sanitized ? `resume_${sanitized}.tex` : "resume.tex";
+}
+
+function getPdfFilename(version?: string): string {
+    if (!version || version === "default" || version === "main") {
+        return "resume.pdf";
+    }
+    const sanitized = version.replace(/[^a-zA-Z0-9_-]/g, "");
+    return sanitized ? `resume_${sanitized}.pdf` : "resume.pdf";
+}
+
+/**
  * 4. GIT HELPERS
  */
 async function initRepo() {
@@ -115,27 +135,26 @@ async function initRepo() {
 }
 
 async function compilePdf() {
-    log("Init", "Compiling initial PDF...");
-    const proc = Bun.spawn(["latexmk", "-xelatex", "-interaction=nonstopmode", "resume.tex"], {
-        stdout: "pipe",
-        stderr: "pipe",
-    });
-    const stdout = await new Response(proc.stdout).text();
-    const stderr = await new Response(proc.stderr).text();
-    const { exitCode } = await proc.exited;
-
-    if (exitCode !== 0) {
-        log("Init", "Initial compilation failed.", { stdout, stderr });
-    } else {
-        log("Init", "Initial compilation successful.");
+    log("Init", "Compiling initial PDFs...");
+    try {
+        const files = fs.readdirSync(".").filter(f => f.endsWith(".tex") && f !== "preview.tex");
+        for (const file of files) {
+            log("Init", `Compiling ${file}...`);
+            const proc = Bun.spawn(["latexmk", "-xelatex", "-interaction=nonstopmode", file]);
+            await proc.exited;
+        }
+        log("Init", "Initial compilations successful.");
+    } catch (e) {
+        log("Init", "Failed to compile initial PDFs", e);
     }
 }
 
-async function commitToGit(msg: string): Promise<{ pushed: boolean; message: string }> {
-    log("Git", "Starting commit sequence", { message: msg });
+async function commitToGit(msg: string, version?: string): Promise<{ pushed: boolean; message: string }> {
+    log("Git", "Starting commit sequence", { message: msg, version });
+    const texFile = getResumeFilename(version);
 
     // Stage changes
-    const add = Bun.spawnSync(["git", "add", "resume.tex"]);
+    const add = Bun.spawnSync(["git", "add", texFile]);
     if (add.exitCode !== 0) {
         const err = new TextDecoder().decode(add.stderr);
         log("Git", "Add failed", { stderr: err });
@@ -204,10 +223,41 @@ new Elysia()
 
     .get("/health", () => ({ status: "warm", engine: "qwen-3-32b" }))
 
-    .get("/resume", async () => await Bun.file("resume.tex").text())
+    .get("/versions", async () => {
+        try {
+            const files = fs.readdirSync(".").filter(f => f.endsWith(".tex") && f !== "preview.tex");
+            const versions = files.map(f => {
+                if (f === "resume.tex") return "default";
+                const match = f.match(/^resume_(.+)\.tex$/);
+                return match ? match[1] : null;
+            }).filter(Boolean);
+            return { versions };
+        } catch (e) {
+            return { versions: ["default"] };
+        }
+    })
 
-    .get("/pdf", async ({ set }) => {
-        const file = Bun.file("resume.pdf");
+    .get("/resume", async ({ query }) => {
+        const version = query.version || "";
+        const filename = getResumeFilename(version);
+        const file = Bun.file(filename);
+        if (!await file.exists()) {
+            const defaultFile = Bun.file("resume.tex");
+            if (await defaultFile.exists()) {
+                await Bun.write(filename, await defaultFile.text());
+            } else {
+                return "Error: default resume.tex not found";
+            }
+        }
+        return await Bun.file(filename).text();
+    })
+
+    .get("/pdf", async ({ query, set }) => {
+        const version = query.version || "";
+        const texFile = getResumeFilename(version);
+        const pdfFile = getPdfFilename(version);
+
+        const file = Bun.file(pdfFile);
         if (await file.exists()) {
             return new Response(file, {
                 headers: { 'Content-Type': 'application/pdf' }
@@ -215,14 +265,14 @@ new Elysia()
         }
 
         // PDF doesn't exist - compile it now
-        log("PDF", "PDF not found, compiling on-demand...");
-        const proc = Bun.spawn(["latexmk", "-xelatex", "-interaction=nonstopmode", "resume.tex"], {
+        log("PDF", `PDF not found, compiling on-demand for version: ${version}...`);
+        const proc = Bun.spawn(["latexmk", "-xelatex", "-interaction=nonstopmode", texFile], {
             stdout: "pipe",
             stderr: "pipe",
         });
         await proc.exited;
 
-        const compiled = Bun.file("resume.pdf");
+        const compiled = Bun.file(pdfFile);
         if (await compiled.exists()) {
             log("PDF", "On-demand compilation successful");
             return new Response(compiled, {
@@ -234,13 +284,15 @@ new Elysia()
         return { error: "Compilation failed" };
     })
 
-    .get("/download", async () => {
-        const file = Bun.file("resume.pdf");
+    .get("/download", async ({ query }) => {
+        const version = query.version || "";
+        const pdfFile = getPdfFilename(version);
+        const file = Bun.file(pdfFile);
         if (await file.exists()) {
             return new Response(file, {
                 headers: {
                     'Content-Type': 'application/pdf',
-                    'Content-Disposition': 'attachment; filename="resume.pdf"'
+                    'Content-Disposition': `attachment; filename="${pdfFile}"`
                 }
             });
         }
@@ -259,8 +311,9 @@ new Elysia()
 
     .post("/commit", async ({ body, set }: any) => {
         const msg = body.message || "Manual Commit";
+        const version = body.version || "";
         try {
-            const result = await commitToGit(msg);
+            const result = await commitToGit(msg, version);
             return { status: "success", pushed: result.pushed, message: result.message };
         } catch (e: any) {
             set.status = 500;
@@ -284,9 +337,11 @@ new Elysia()
 
     .post("/save", async ({ body }: any) => {
         if (!body.latex) return { error: "No content" };
+        const version = body.version || "";
+        const texFile = getResumeFilename(version);
         try {
             const safeTex = sanitizeLatex(body.latex);
-            await Bun.write("resume.tex", safeTex);
+            await Bun.write(texFile, safeTex);
             return { status: "saved" };
         } catch (e) {
             return { error: String(e) };
@@ -340,8 +395,12 @@ new Elysia()
             return { error: "Daily budget exceeded" };
         }
 
-        let tex = await Bun.file("resume.tex").text();
-        log("AI", "Processing update request", { instruction: body.instruction });
+        const version = body.version || "";
+        const texFile = getResumeFilename(version);
+        const pdfFile = getPdfFilename(version);
+
+        let tex = await Bun.file(texFile).text();
+        log("AI", `Processing update request for version ${version}`, { instruction: body.instruction });
 
         let resBody;
         try {
@@ -480,8 +539,8 @@ CRITICAL RULES:
                 tex = tex.replace(p.search, p.replace);
             }
 
-            await Bun.write("resume.tex", tex);
-            const proc = Bun.spawn(["latexmk", "-xelatex", "-interaction=nonstopmode", "resume.tex"], {
+            await Bun.write(texFile, tex);
+            const proc = Bun.spawn(["latexmk", "-xelatex", "-interaction=nonstopmode", texFile], {
                 stdout: "pipe",
                 stderr: "pipe",
             });
@@ -492,7 +551,7 @@ CRITICAL RULES:
             if (exitCode !== 0) {
                 // REVERT LOGIC
                 log("AI", "Compilation failed. Reverting changes...", { stdout: stdout.slice(-200), stderr: stderr.slice(-200) });
-                await Bun.write("resume.tex", originalTex);
+                await Bun.write(texFile, originalTex);
 
                 // Try to extract the actual error from the log
                 const errorMatch = stdout.match(/! .+/g) || stderr.match(/! .+/g);
@@ -507,11 +566,10 @@ CRITICAL RULES:
             log("AI", "Update successful");
 
 
-            // Return JSON so frontend can handle state (Undo/Redo)
             return {
                 status: "success",
                 latex: tex,
-                pdfUrl: "/pdf?t=" + Date.now() // Cache busting
+                pdfUrl: `/pdf?version=${version}&t=` + Date.now() // Cache busting
             };
 
         } catch (e) {

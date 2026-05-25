@@ -6,9 +6,10 @@ import { updateResume } from '@/lib/api';
 interface ResumeFormProps {
     onSuccess: (newLatex: string, newPdfUrl: string) => void;
     apiUrl: string;
+    version: string;
 }
 
-export default function ResumeForm({ onSuccess, apiUrl }: ResumeFormProps) {
+export default function ResumeForm({ onSuccess, apiUrl, version }: ResumeFormProps) {
     const [instruction, setInstruction] = useState('');
     const [jobDescription, setJobDescription] = useState('');
     const [showJD, setShowJD] = useState(false);
@@ -24,7 +25,7 @@ export default function ResumeForm({ onSuccess, apiUrl }: ResumeFormProps) {
 
         try {
             // Commit is now MANUAL. We pass nothing for commit param (defaults false in api wrapper).
-            const result = await updateResume(instruction, jobDescription, apiUrl);
+            const result = await updateResume(instruction, jobDescription, apiUrl, version);
 
             if (result.error) throw new Error(result.error);
             if (!result.latex) throw new Error("No LaTeX returned");

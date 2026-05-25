@@ -22,6 +22,11 @@ export default function Dashboard({ apiUrl }: DashboardProps) {
     const [activeTab, setActiveTab] = useState<'ai' | 'manual'>('ai');
 
     // -- State Management --
+    const [version, setVersion] = useState<string>('default');
+    const [versions, setVersions] = useState<string[]>(['default']);
+    const [showNewVersionModal, setShowNewVersionModal] = useState(false);
+    const [newVersionName, setNewVersionName] = useState('');
+
     const [latex, setLatex] = useState('');
     const [pdfUrl, setPdfUrl] = useState<string | null>(null);
 
@@ -37,22 +42,38 @@ export default function Dashboard({ apiUrl }: DashboardProps) {
     const [isStopModalOpen, setIsStopModalOpen] = useState(false);
     const [isStopping, setIsStopping] = useState(false);
 
-    // Auto-fetch PDF and LaTeX on mount (same-origin API)
+    const fetchVersions = useCallback(async () => {
+        try {
+            const res = await fetch(`${apiUrl}/versions`);
+            if (res.ok) {
+                const data = await res.json();
+                setVersions(data.versions || ['default']);
+            }
+        } catch (e) {
+            console.error("Failed to fetch versions", e);
+        }
+    }, [apiUrl]);
+
     useEffect(() => {
-        // Fetch PDF for preview (direct same-origin call)
-        const pdfUrl = `${apiUrl}/pdf`;
-        fetch(pdfUrl).then(res => {
-            if (res.ok) setPdfUrl(pdfUrl);
+        fetchVersions();
+    }, [fetchVersions]);
+
+    // Auto-fetch PDF and LaTeX on mount and version change
+    useEffect(() => {
+        const queryParam = version === 'default' ? '' : `?version=${version}`;
+        const pdfEndpoint = `${apiUrl}/pdf${queryParam}`;
+        
+        fetch(pdfEndpoint).then(res => {
+            if (res.ok) setPdfUrl(pdfEndpoint);
         }).catch(console.error);
 
-        // Fetch LaTeX source for the manual editor
-        fetch(`${apiUrl}/resume`).then(res => {
+        fetch(`${apiUrl}/resume${queryParam}`).then(res => {
             if (res.ok) return res.text();
             return null;
         }).then(text => {
             if (text) setLatex(text);
         }).catch(console.error);
-    }, [apiUrl]);
+    }, [apiUrl, version]);
     const [history, setHistory] = useState<string[]>([]);
     const [future, setFuture] = useState<string[]>([]);
 
@@ -119,7 +140,7 @@ export default function Dashboard({ apiUrl }: DashboardProps) {
         if (!commitMsg.trim()) return;
         setIsCommitting(true);
         try {
-            await commitChanges(commitMsg, apiUrl);
+            await commitChanges(commitMsg, apiUrl, version);
             showToast('✓ Changes pushed to GitHub!', 'success');
             setCommitMsg('');
             setIsCommitOpen(false);
@@ -220,12 +241,58 @@ export default function Dashboard({ apiUrl }: DashboardProps) {
                 </div>
             )}
 
+            {/* New Version Modal */}
+            {showNewVersionModal && (
+                <div className="fixed inset-0 z-[90] bg-black/60 backdrop-blur-sm flex items-center justify-center animate-in fade-in duration-200">
+                    <div className="bg-zinc-900 border border-zinc-700 rounded-xl p-6 max-w-sm w-full mx-4 shadow-2xl animate-in zoom-in-95 duration-200">
+                        <h3 className="text-xl font-bold text-white mb-2">Create New Version</h3>
+                        <p className="text-zinc-400 text-sm mb-4">
+                            Enter a name for the new version (e.g. <code className="bg-zinc-800 px-1 py-0.5 rounded text-xs">swe</code>). This will duplicate your current default resume.
+                        </p>
+                        <input
+                            className="w-full bg-zinc-950 border border-zinc-800 rounded p-2 text-white text-sm mb-4 focus:outline-none focus:border-blue-500"
+                            placeholder="e.g. swe"
+                            value={newVersionName}
+                            onChange={e => setNewVersionName(e.target.value.toLowerCase().replace(/[^a-z0-9_-]/g, ''))}
+                            autoFocus
+                        />
+                        <div className="flex gap-3 justify-end">
+                            <button
+                                onClick={() => {
+                                    setShowNewVersionModal(false);
+                                    setNewVersionName('');
+                                }}
+                                className="px-4 py-2 bg-zinc-800 text-white rounded-lg hover:bg-zinc-700 transition-colors text-sm"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={() => {
+                                    if (newVersionName.trim()) {
+                                        const name = newVersionName.trim();
+                                        if (!versions.includes(name)) {
+                                            setVersions(prev => [...prev, name]);
+                                        }
+                                        setVersion(name);
+                                        setShowNewVersionModal(false);
+                                        setNewVersionName('');
+                                    }
+                                }}
+                                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-500 transition-colors text-sm"
+                            >
+                                Create
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* LEFT PANE: Input (Tabs) */}
             <div className="w-1/2 flex flex-col gap-4">
 
                 {/* Top Bar: Tabs + Undo/Redo/Commit/Stop */}
                 <div className="flex justify-between items-center bg-zinc-900 p-2 rounded-lg border border-zinc-800">
-                    <div className="flex gap-1">
+                    <div className="flex gap-1 items-center">
                         <button
                             onClick={() => setActiveTab('ai')}
                             className={`px-3 py-1 text-sm rounded transition-all ${activeTab === 'ai' ? 'bg-zinc-800 text-white' : 'text-zinc-400 hover:text-white'}`}
@@ -238,6 +305,25 @@ export default function Dashboard({ apiUrl }: DashboardProps) {
                         >
                             Manual
                         </button>
+                        <div className="w-px h-4 bg-zinc-800 mx-2"></div>
+                        <select
+                            value={version}
+                            onChange={(e) => {
+                                if (e.target.value === '__new__') {
+                                    setShowNewVersionModal(true);
+                                } else {
+                                    setVersion(e.target.value);
+                                }
+                            }}
+                            className="bg-zinc-800 text-white text-xs rounded border border-zinc-700 px-2 py-1 outline-none cursor-pointer focus:border-zinc-500"
+                        >
+                            {versions.map(v => (
+                                <option key={v} value={v}>
+                                    {v === 'default' ? '📄 Default' : `📄 ${v.toUpperCase()}`}
+                                </option>
+                            ))}
+                            <option value="__new__">➕ Create New Version...</option>
+                        </select>
                     </div>
 
                     <div className="flex gap-2 items-center">
@@ -300,7 +386,7 @@ export default function Dashboard({ apiUrl }: DashboardProps) {
                                     Describe changes or paste a Job Description. The AI will rewrite your LaTeX resume.
                                 </p>
                             </div>
-                            <ResumeForm onSuccess={handleAiSuccess} apiUrl={apiUrl} />
+                            <ResumeForm onSuccess={handleAiSuccess} apiUrl={apiUrl} version={version} />
                         </div>
                     ) : (
                         <div className="h-full animate-in fade-in slide-in-from-right-4 duration-300">
@@ -309,6 +395,7 @@ export default function Dashboard({ apiUrl }: DashboardProps) {
                                 setLatex={handleManualChange}
                                 onPreviewUpdate={setPdfUrl}
                                 apiUrl={apiUrl}
+                                version={version}
                             />
                         </div>
                     )}
