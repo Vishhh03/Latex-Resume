@@ -37,6 +37,9 @@ jobs:
           compiler: latexmk
           args: -xelatex -interaction=nonstopmode
 
+      - name: Fix Permissions
+        run: sudo chown -R $USER:$USER .
+
       - name: Move PDFs to tmp
         run: |
           mkdir -p /tmp/pdfs
