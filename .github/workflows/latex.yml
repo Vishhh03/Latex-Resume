@@ -28,36 +28,29 @@ jobs:
 
           fetch-depth: 1
 
-      # Use robust TeXLive container to compile all LaTeX files
       - name: Build PDFs
         uses: xu-cheng/latex-action@v3
         with:
           root_file: "*.tex"
           glob_root_file: true
           compiler: latexmk
-          args: -xelatex -interaction=nonstopmode
+          args: -xelatex -interaction=nonstopmode -halt-on-error
 
       - name: Fix Permissions
         run: sudo chown -R $USER:$USER .
 
-      - name: Move PDFs to tmp
+      - name: Organize PDFs & Generate Release Notes
         run: |
           mkdir -p /tmp/pdfs
-          # Only copy PDFs that have a corresponding .tex file (to avoid copying other PDFs)
+          echo "Your compiled resume versions are ready for download!" > /tmp/release_body.txt
+          echo -e "\n### Inline Previews:" >> /tmp/release_body.txt
+          
           for f in *.tex; do
-            if [ -f "${f%.tex}.pdf" ]; then
-              cp "${f%.tex}.pdf" /tmp/pdfs/
+            pdf_name="${f%.tex}.pdf"
+            if [ -f "$pdf_name" ]; then
+              cp "$pdf_name" /tmp/pdfs/
+              echo "- **${pdf_name%.pdf}**: [Preview PDF](https://github.com/${{ github.repository }}/blob/pdf-output/$pdf_name)" >> /tmp/release_body.txt
             fi
-          done
-
-      - name: Generate Release Body
-        run: |
-          echo "Your compiled resume versions are ready for download below!" > /tmp/release_body.txt
-          echo "" >> /tmp/release_body.txt
-          echo "You can preview each version inline:" >> /tmp/release_body.txt
-          for f in /tmp/pdfs/*.pdf; do
-            name=$(basename "$f" .pdf)
-            echo "- **$name**: [Preview PDF](https://github.com/${{ github.repository }}/blob/pdf-output/$name.pdf)" >> /tmp/release_body.txt
           done
 
       # Push PDFs to orphan branch for inline preview
@@ -67,13 +60,13 @@ jobs:
           git rm -rf .
           cp /tmp/pdfs/*.pdf .
           git add *.pdf
-          git config user.name "GitHub Actions"
-          git config user.email "actions@github.com"
-          git commit -m "Update resume PDFs"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git commit -m "chore: auto-compile resumes [skip ci]"
           git push origin pdf-output-temp:pdf-output --force
 
       # Also create release for download
-      - name: Create Release with PDFs
+      - name: Update Latest Release
         uses: softprops/action-gh-release@v1
         with:
           tag_name: latest
