@@ -28,48 +28,54 @@ jobs:
 
           fetch-depth: 1
 
-      # Cache Tectonic packages
-      - name: Cache Tectonic
-        uses: actions/cache@v4
+      # Use robust TeXLive container to compile all LaTeX files
+      - name: Build PDFs
+        uses: xu-cheng/latex-action@v3
         with:
-          path: ~/.cache/Tectonic
-          key: tectonic-${{ runner.os }}-${{ hashFiles('resume.tex') }}
-          restore-keys: |
-            tectonic-${{ runner.os }}-
+          root_file: "*.tex"
+          glob_root_file: true
+          compiler: latexmk
+          args: -xelatex -interaction=nonstopmode
 
-      # Install FUSE (Required for Tectonic AppImage)
-      - name: Install libfuse2
-        run: sudo apt-get install -y libfuse2
-
-      # Setup Tectonic (Faster LaTeX Compiler)
-      - name: Setup Tectonic
-        uses: wtfjoke/setup-tectonic@v3
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Build PDF
-        run: tectonic resume.tex
-
-      # Push PDF to orphan branch for inline preview
-      - name: Push PDF to pdf-output branch
+      - name: Move PDFs to tmp
         run: |
-          cp resume.pdf /tmp/resume.pdf
+          mkdir -p /tmp/pdfs
+          # Only copy PDFs that have a corresponding .tex file (to avoid copying other PDFs)
+          for f in *.tex; do
+            if [ -f "${f%.tex}.pdf" ]; then
+              cp "${f%.tex}.pdf" /tmp/pdfs/
+            fi
+          done
+
+      - name: Generate Release Body
+        run: |
+          echo "Your compiled resume versions are ready for download below!" > /tmp/release_body.txt
+          echo "" >> /tmp/release_body.txt
+          echo "You can preview each version inline:" >> /tmp/release_body.txt
+          for f in /tmp/pdfs/*.pdf; do
+            name=$(basename "$f" .pdf)
+            echo "- **$name**: [Preview PDF](https://github.com/${{ github.repository }}/blob/pdf-output/$name.pdf)" >> /tmp/release_body.txt
+          done
+
+      # Push PDFs to orphan branch for inline preview
+      - name: Push PDFs to pdf-output branch
+        run: |
           git checkout --orphan pdf-output-temp
           git rm -rf .
-          cp /tmp/resume.pdf resume.pdf
-          git add resume.pdf
+          cp /tmp/pdfs/*.pdf .
+          git add *.pdf
           git config user.name "GitHub Actions"
           git config user.email "actions@github.com"
-          git commit -m "Update resume PDF"
+          git commit -m "Update resume PDFs"
           git push origin pdf-output-temp:pdf-output --force
 
       # Also create release for download
-      - name: Create Release with PDF
+      - name: Create Release with PDFs
         uses: softprops/action-gh-release@v1
         with:
           tag_name: latest
           name: Latest Resume
-          files: /tmp/resume.pdf
-          body: "Preview: https://github.com/${{ github.repository }}/blob/pdf-output/resume.pdf"
+          files: /tmp/pdfs/*.pdf
+          body_path: /tmp/release_body.txt
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
