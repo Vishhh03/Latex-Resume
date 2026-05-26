@@ -10,7 +10,7 @@
 % --- PERSONAL INFO ---
 
 \name{Vishal}{Shaji}
-\title{\\[2mm] Linux Systems Engineer} % Tailored for Linux Systems & Infrastructure Engineering
+\title{\\[2mm] Infrastructure Software Engineer} % Tailored for Apple Service Engineering
 \address{Kochi, India}{} % 
 \phone[mobile]{+91 7306997081} % 
 \email{vishshaji03@gmail.com} % 
@@ -23,7 +23,7 @@
 \hypersetup{
   colorlinks=true,
   urlcolor=blue,
-  pdftitle={Vishal Shaji - Linux Systems Engineer Resume},
+  pdftitle={Vishal Shaji - Storage Infrastructure Resume},
 }
 
 \makecvtitle
@@ -34,16 +34,16 @@
 
 \cventry
   {Jul 2025 -- Present}
-  {Programmer Analyst Trainee - Systems & Support}
+  {Programmer Analyst Trainee - UPS Logistics Services}
   {Cognizant Technology Solutions}
   {Chennai, India}
   {}
   {
   \begin{itemize}\setlength{\itemsep}{2pt}
-    \item Managed Linux and Windows server environments, executing system health diagnostics, performance monitoring, and resource optimization.
-    \item Developed robust administrative Bash and PowerShell scripts to automate system cleanup, log rotation, and disk space management, improving server uptime.
-    \item Troubleshot complex systems issues including I/O bottlenecks, storage exhaustion, service crashes, and database connection failures using log analysis and tools like Dynatrace.
-    \item Conducted root-cause analysis on system incidents, maintaining detailed tracking of system telemetry and operational health metrics.
+    \item Supported Windows Server and Azure-based production infrastructure for enterprise logistics systems, troubleshooting operational incidents and service failures.
+    \item Investigated application and infrastructure issues using log analysis, SQL Server (SSMS), Dynatrace, and production monitoring tools.
+    \item Automated administrative and troubleshooting workflows using PowerShell scripting to improve operational efficiency.
+    \item Managed infrastructure support tickets and collaborated with operational teams on issue triage and root-cause analysis.
   \end{itemize}
   }
 
@@ -51,14 +51,13 @@
 
 \cventry
   {Jan 2025 -- Jun 2025}
-  {Tech Consultant (Systems Intern)}
+  {Tech Consultant (Intern)}
   {Bommaku Constructions}
   {Hyderabad, India}
   {}
   {
   \begin{itemize}\setlength{\itemsep}{2pt}
-    \item Provisioned and optimized high-performance Linux instances (AWS EC2) with customized GPU and system-level streaming parameters for Unreal Engine 5 Pixel Streaming.
-    \item Configured virtual network interfaces, system firewalls, and optimized OS-level network buffers to ensure low-latency real-time video delivery to clients.
+    \item Deployed and optimized AWS EC2 and self-hosted signaling infrastructure for Unreal Engine 5 Pixel Streaming, enabling real-time architectural visualization demos for clients.
   \end{itemize}
   }
 
@@ -73,10 +72,10 @@
   {}
   {
   \begin{itemize}\setlength{\itemsep}{2pt}
-    \item Engineered a high-performance Linux block storage layer utilizing Btrfs over NVMe SSDs, implementing custom subvolume structures, data compression, and device-level tuning for heavy disk I/O game workloads.
-    \item Authored automated Bash and Python scripts for executing atomic, incremental block-level snapshots with sub-100ms disk freeze times, assuring zero data corruption and a 60-second RTO.
-    \item Configured virtualized container runners using Docker on Linux hosts, writing custom systemd service configurations to handle auto-recovery, lifecycle hooks, and resource isolation (cgroups).
-    \item Designed a reverse-proxy ingress layer using Nginx, implementing automated iptables firewall rules and rate-limiting scripts for real-time DDoS mitigation.
+    \item Engineered a high-performance Linux block storage layer using Btrfs on NVMe SSDs, implementing snapshot-based persistence, subvolume isolation, and filesystem tuning for low-latency game workloads.
+    \item Authored automated Bash/Python scripts for incremental block-level snapshots, achieving data freeze times under 100ms and a 60-second RTO for large-scale data.
+    \item Architected a distributed control plane using an AWS Serverless stack (Lambda, DynamoDB) to manage stateful Linux containers on Hetzner Cloud, reducing hosting costs by 90\%.
+    \item Deployed scalable containerized workloads and designed an Nginx-based ingress layer with automated firewall rules for DDoS mitigation.
   \end{itemize}
   }
 
@@ -84,15 +83,15 @@
 
 \cventry
   {}
-  {Serverless Systems Automation}
-  {AI-Latex-Editor}
-  {\textit{\url{https://github.com/Vishhh03/Latex-Resume}}}
+  {Cloud Infrastructure Homelab}
+  {Personal Infrastructure Lab}
+  {\textit{\url{https://github.com/Vishhh03/EnterpriseHomeLab}}}
   {}
   {
   \begin{itemize}\setlength{\itemsep}{2pt}
-    \item Provisioned robust multi-architecture container infrastructure (Docker, AWS ECS Fargate, Lambda) using Terraform IaC, optimizing CPU and memory allocations for compiler workloads.
-    \item Streamlined container filesystem boots and memory configurations to reduce cold start overhead to under 60 seconds with self-terminating idle policies.
-    \item Built an automated alerting pipeline using CloudWatch metrics and Lambda hooks to monitor container exit codes, memory consumption limits, and execution limits.
+    \item Built and maintained a cloud-hosted Linux homelab using AWS EC2, Docker, and reverse proxy tooling to simulate production-style infrastructure environments.
+    \item Automated deployment workflows and server provisioning through shell scripting and Infrastructure as Code practices, improving repeatability and operational efficiency.
+    \item Configured containerized services, SSH-based administration, networking, monitoring, and resource management while troubleshooting real-world Linux and infrastructure issues.
   \end{itemize}
   }
 
@@ -115,12 +114,11 @@
 % --- TECHNICAL SKILLS ---
 \section{Technical Skills}
 
-\cvitem{Languages}{Bash, Python, Go, Java, C, C\#, JavaScript, SQL, PowerShell}
-\cvitem{Systems}{Linux Internals, Btrfs filesystem, Block Storage, Device Mapping, cgroups, systemd, strace, lsof, sysctl}
-\cvitem{Containers \& VM}{Docker, Kubernetes, KVM, Container Isolation, AWS ECS, Fargate}
-\cvitem{Infrastructure}{AWS (EC2, Lambda, S3, RDS, DynamoDB), Hetzner Cloud, Terraform IaC, Nginx Ingress}
-\cvitem{Observability}{Prometheus, Grafana, Dynatrace, ELK Stack, CloudWatch, Linux performance metrics (top, iostat, vmstat)}
-\cvitem{Fundamentals}{Operating Systems, Systems Programming, TCP/IP Networking, Data Structures \& Algorithms}
+\cvitem{Languages}{Python, Java, C\#, Node.js, Go, JavaScript, SQL, Bash Scripting}
+\cvitem{Systems}{Linux Internals, Block/File Storage, Btrfs, NVMe Optimization, Virtualization, Distributed Systems}
+\cvitem{Cloud \& Infra}{Docker, AWS (EC2, Lambda, S3, ECS, DynamoDB, RDS), Terraform, Kubernetes}
+\cvitem{Observability}{Prometheus, Grafana, ELK Stack (Elasticsearch, Logstash, Kibana), Dynatrace, CloudWatch}
+\cvitem{Fundamentals}{Data Structures \& Algorithms, Object-Oriented Design, Root-Cause Analysis, System Architecture}
 
 % --- CERTIFICATIONS ---
 \section{Certifications}
