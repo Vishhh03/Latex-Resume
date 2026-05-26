@@ -1,0 +1,132 @@
+\documentclass[10pt, a4paper, sans]{moderncv}
+\moderncvstyle{classic}
+\moderncvcolor{blue}
+
+\usepackage{newtxtext}
+\usepackage{newtxmath}
+\usepackage[a4paper, top=1.3cm, bottom=1.3cm, left=1.6cm, right=1.6cm]{geometry}
+\renewcommand{\labelitemi}{\textbullet}
+
+% --- PERSONAL INFO ---
+
+\name{Vishal}{Shaji}
+\title{\\[2mm] Linux Systems Engineer} % Tailored for Linux Systems & Infrastructure Engineering
+\address{Kochi, India}{} % 
+\phone[mobile]{+91 7306997081} % 
+\email{vishshaji03@gmail.com} % 
+\social[linkedin]{VishalShaji} % 
+\social[github]{Vishhh03} % 
+\homepage{https://vishalshaji.com}
+
+\begin{document}
+
+\hypersetup{
+  colorlinks=true,
+  urlcolor=blue,
+  pdftitle={Vishal Shaji - Linux Systems Engineer Resume},
+}
+
+\makecvtitle
+\vspace*{-8mm}
+
+% --- EXPERIENCE ---
+\section{Experience}
+
+\cventry
+  {Jul 2025 -- Present}
+  {Programmer Analyst Trainee - Systems & Support}
+  {Cognizant Technology Solutions}
+  {Chennai, India}
+  {}
+  {
+  \begin{itemize}\setlength{\itemsep}{2pt}
+    \item Managed Linux and Windows server environments, executing system health diagnostics, performance monitoring, and resource optimization.
+    \item Developed robust administrative Bash and PowerShell scripts to automate system cleanup, log rotation, and disk space management, improving server uptime.
+    \item Troubleshot complex systems issues including I/O bottlenecks, storage exhaustion, service crashes, and database connection failures using log analysis and tools like Dynatrace.
+    \item Conducted root-cause analysis on system incidents, maintaining detailed tracking of system telemetry and operational health metrics.
+  \end{itemize}
+  }
+
+\vspace{1mm}
+
+\cventry
+  {Jan 2025 -- Jun 2025}
+  {Tech Consultant (Systems Intern)}
+  {Bommaku Constructions}
+  {Hyderabad, India}
+  {}
+  {
+  \begin{itemize}\setlength{\itemsep}{2pt}
+    \item Provisioned and optimized high-performance Linux instances (AWS EC2) with customized GPU and system-level streaming parameters for Unreal Engine 5 Pixel Streaming.
+    \item Configured virtual network interfaces, system firewalls, and optimized OS-level network buffers to ensure low-latency real-time video delivery to clients.
+  \end{itemize}
+  }
+
+% --- PROJECTS ---
+\section{Projects}
+
+\cventry
+  {}
+  {Hybrid-Cloud Game Server SaaS}
+  {TerraLess}
+  {\textit{\url{https://www.terraless.com}}}
+  {}
+  {
+  \begin{itemize}\setlength{\itemsep}{2pt}
+    \item Engineered a high-performance Linux block storage layer utilizing Btrfs over NVMe SSDs, implementing custom subvolume structures, data compression, and device-level tuning for heavy disk I/O game workloads.
+    \item Authored automated Bash and Python scripts for executing atomic, incremental block-level snapshots with sub-100ms disk freeze times, assuring zero data corruption and a 60-second RTO.
+    \item Configured virtualized container runners using Docker on Linux hosts, writing custom systemd service configurations to handle auto-recovery, lifecycle hooks, and resource isolation (cgroups).
+    \item Designed a reverse-proxy ingress layer using Nginx, implementing automated iptables firewall rules and rate-limiting scripts for real-time DDoS mitigation.
+  \end{itemize}
+  }
+
+\vspace{1mm}
+
+\cventry
+  {}
+  {Serverless Systems Automation}
+  {AI-Latex-Editor}
+  {\textit{\url{https://github.com/Vishhh03/Latex-Resume}}}
+  {}
+  {
+  \begin{itemize}\setlength{\itemsep}{2pt}
+    \item Provisioned robust multi-architecture container infrastructure (Docker, AWS ECS Fargate, Lambda) using Terraform IaC, optimizing CPU and memory allocations for compiler workloads.
+    \item Streamlined container filesystem boots and memory configurations to reduce cold start overhead to under 60 seconds with self-terminating idle policies.
+    \item Built an automated alerting pipeline using CloudWatch metrics and Lambda hooks to monitor container exit codes, memory consumption limits, and execution limits.
+  \end{itemize}
+  }
+
+% --- EDUCATION ---
+\section{Education}
+
+\cventry
+  {2021 -- 2025}
+  {Bachelor of Technology (B.Tech) -- Civil Engineering}
+  {TOCH Institute of Science and Technology}
+  {Kochi, India}
+  {}
+  {
+  \begin{itemize}\setlength{\itemsep}{2pt}
+    \item Minor in Machine Learning
+    \item Led a final year project focused on Kochi Metro analytics using Machine learning which won Best Paper Award in International Conference (ICITES).
+  \end{itemize}
+  }
+
+% --- TECHNICAL SKILLS ---
+\section{Technical Skills}
+
+\cvitem{Languages}{Bash, Python, Go, Java, C, C\#, JavaScript, SQL, PowerShell}
+\cvitem{Systems}{Linux Internals, Btrfs filesystem, Block Storage, Device Mapping, cgroups, systemd, strace, lsof, sysctl}
+\cvitem{Containers \& VM}{Docker, Kubernetes, KVM, Container Isolation, AWS ECS, Fargate}
+\cvitem{Infrastructure}{AWS (EC2, Lambda, S3, RDS, DynamoDB), Hetzner Cloud, Terraform IaC, Nginx Ingress}
+\cvitem{Observability}{Prometheus, Grafana, Dynatrace, ELK Stack, CloudWatch, Linux performance metrics (top, iostat, vmstat)}
+\cvitem{Fundamentals}{Operating Systems, Systems Programming, TCP/IP Networking, Data Structures \& Algorithms}
+
+% --- CERTIFICATIONS ---
+\section{Certifications}
+
+\cvitem{}{AWS Certified Cloud Practitioner}
+\cvitem{}{AWS Certified AI Practitioner}
+\cvitem{}{OCI Associate Architect}
+
+\end{document}
