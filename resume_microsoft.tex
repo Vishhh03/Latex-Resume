@@ -1,0 +1,132 @@
+\documentclass[10pt, a4paper, sans]{moderncv}
+\moderncvstyle{classic}
+\moderncvcolor{blue}
+
+\usepackage{newtxtext}
+\usepackage{newtxmath}
+\usepackage[a4paper, top=1.3cm, bottom=1.3cm, left=1.6cm, right=1.6cm]{geometry}
+\renewcommand{\labelitemi}{\textbullet}
+
+% --- PERSONAL INFO ---
+
+\name{Vishal}{Shaji}
+\title{\\[2mm] Software Engineer} % Tailored for Microsoft (Cloud, Systems & AI)
+\address{Kochi, India}{} % 
+\phone[mobile]{+91 7306997081} % 
+\email{vishshaji03@gmail.com} % 
+\social[linkedin]{VishalShaji} % 
+\social[github]{Vishhh03} % 
+\homepage{https://vishalshaji.com}
+
+\begin{document}
+
+\hypersetup{
+  colorlinks=true,
+  urlcolor=blue,
+  pdftitle={Vishal Shaji - Software Engineer Resume},
+}
+
+\makecvtitle
+\vspace*{-8mm}
+
+% --- EXPERIENCE ---
+\section{Experience}
+
+\cventry
+  {Jul 2025 -- Present}
+  {Programmer Analyst Trainee - UPS Logistics Services}
+  {Cognizant Technology Solutions}
+  {Chennai, India}
+  {}
+  {
+  \begin{itemize}\setlength{\itemsep}{2pt}
+    \item Contributed to a high-throughput, enterprise-level \textbf{.NET / C\# codebase} for UPS Logistics Services, maintaining robust backend APIs and microservices.
+    \item Engineered and optimized Azure Data Factory pipelines to ingest and process large-scale logistics data workflows across environments.
+    \item Investigated complex application failures and database issues utilizing SQL Server Management Studio (SSMS), log analytics, and Dynatrace production monitoring tools.
+    \item Automated systems administration, diagnostics, and deployment verification workflows using PowerShell scripting, saving hours of manual toil.
+    \item Documented detailed incident root-cause analyses and collaborated across operations teams to resolve system-critical bugs.
+  \end{itemize}
+  }
+
+\vspace{1mm}
+
+\cventry
+  {Jan 2025 -- Jun 2025}
+  {Tech Consultant (Intern)}
+  {Bommaku Constructions}
+  {Hyderabad, India}
+  {}
+  {
+  \begin{itemize}\setlength{\itemsep}{2pt}
+    \item Provisioned and optimized high-performance virtualized infrastructure (AWS/Azure virtual machines) and signaling endpoints for Unreal Engine 5 Pixel Streaming.
+    \item Customized network routing configurations and system firewall policies to enable seamless real-time client presentations.
+  \end{itemize}
+  }
+
+% --- PROJECTS ---
+\section{Projects}
+
+\cventry
+  {}
+  {AI-driven Resume Automation Platform}
+  {AI-Latex-Editor}
+  {\textit{\url{https://github.com/Vishhh03/Latex-Resume}}}
+  {}
+  {
+  \begin{itemize}\setlength{\itemsep}{2pt}
+    \item Architected a serverless system that integrates Generative AI (LLMs via Amazon Bedrock) with automated LaTeX compilers to dynamically tailor and patch resumes based on specific role descriptions.
+    \item Engineered a wake-on-demand infrastructure utilizing AWS ECS Fargate, Lambda, and SNS, lowering container boot and cold start times to under 60 seconds with self-terminating compute loops.
+    \item Authored clean, modular Infrastructure as Code (IaC) using Terraform for highly-available deployments and secure IAM policies.
+    \item Designed an event-driven budget monitoring tool (Lambda + SNS) that serves as an automated kill switch to prevent runaway compute expenses.
+  \end{itemize}
+  }
+
+\vspace{1mm}
+
+\cventry
+  {}
+  {Hybrid-Cloud Game Server SaaS}
+  {TerraLess}
+  {\textit{\url{https://www.terraless.com}}}
+  {}
+  {
+  \begin{itemize}\setlength{\itemsep}{2pt}
+    \item Designed a high-performance backend storage layer using Btrfs on NVMe SSDs, implementing subvolume isolation and custom snapshot policies to achieve sub-100ms disk freezes.
+    \item Built a rule-based lifecycle automation engine in Node.js to scale stateful game servers on Hetzner Cloud, saving 90\% on compute expenditures.
+    \item Provisioned robust containerized services and set up reverse proxy infrastructure (Nginx) alongside automated firewall scripts for DDoS mitigation.
+  \end{itemize}
+  }
+
+% --- EDUCATION ---
+\section{Education}
+
+\cventry
+  {2021 -- 2025}
+  {Bachelor of Technology (B.Tech) -- Civil Engineering}
+  {TOCH Institute of Science and Technology}
+  {Kochi, India}
+  {}
+  {
+  \begin{itemize}\setlength{\itemsep}{2pt}
+    \item Minor in Machine Learning
+    \item Led a final year project focused on Kochi Metro analytics using Machine learning which won Best Paper Award in International Conference (ICITES).
+  \end{itemize}
+  }
+
+% --- TECHNICAL SKILLS ---
+\section{Technical Skills}
+
+\cvitem{Languages}{C\#, .NET Core, Python, Java, Go, Node.js, SQL, PowerShell, Bash Scripting, JavaScript}
+\cvitem{Cloud \& Systems}{Azure (Data Factory, Azure Monitor, Virtual Machines), AWS (EC2, Lambda, S3, ECS, DynamoDB, RDS), Terraform IaC, Docker, Kubernetes}
+\cvitem{Databases \& Systems}{SQL Server (SSMS), Linux Internals, Block/File Storage, Btrfs filesystem, Distributed Systems}
+\cvitem{Observability \& Tools}{Dynatrace, Prometheus, Grafana, ELK Stack, Git, GitHub Actions CI/CD}
+\cvitem{Fundamentals}{Operating Systems, Systems Programming, Object-Oriented Design (OOD), Generative AI / LLM Integration, Data Structures \& Algorithms}
+
+% --- CERTIFICATIONS ---
+\section{Certifications}
+
+\cvitem{}{Microsoft Certified: Azure Fundamentals (AZ-900)}
+\cvitem{}{AWS Certified AI Practitioner}
+\cvitem{}{AWS Certified Cloud Practitioner}
+
+\end{document}
