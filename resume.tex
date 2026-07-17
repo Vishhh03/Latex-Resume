@@ -10,7 +10,7 @@
 % --- PERSONAL INFO ---
 
 \name{Vishal}{Shaji}
-\title{\\[2mm] Cloud \& DevOps Engineer} % [cite: 1]
+\title{\\[2mm] Software \& Cloud Engineer} % [cite: 1]
 \address{Kochi, India}{} % 
 \phone[mobile]{+91 7306997081} % [cite: 2]
 \email{vishshaji03@gmail.com} % 
@@ -34,16 +34,16 @@
 
 \cventry
   {Jul 2025 -- Present} % [cite: 34]
-  {Programmer Analyst Trainee - UPS Logistics Services} % [cite: 8]
+  {Programmer Analyst - UPS Logistics Services} % [cite: 8]
   {Cognizant Technology Solutions} % [cite: 7]
   {Chennai, India} % [cite: 34]
   {}
   {
   \begin{itemize}\setlength{\itemsep}{2pt}
-    \item Built and maintained Azure Data Factory pipelines supporting enterprise data workflows. % [cite: 9]
-    \item Performed daily system health checks and reported operational metrics across environments. % [cite: 10]
-    \item Managed server maintenance activities including disk space optimisation and cleanup. % [cite: 11]
-    \item Monitored production alerts and performed root-cause analysis for pipeline failures. % [cite: 12]
+    \item Built and maintained Azure Data Factory production pipelines supporting enterprise data workflows. % [cite: 9]
+    \item Developed internal .NET automation tools and powershell scripts. % [cite: 10]
+    \item Selected to independently support multiple business-critical UPS service domains during production operations. % [cite: 11]
+    \item Monitored production deployments and performed root-cause analysis for production failures. % [cite: 12]
   \end{itemize}
   }
 
@@ -68,12 +68,12 @@
 \cventry
   {}
   {Hybrid-Cloud Game Server SaaS}
-  {TerraLess} % [cite: 18]
-  {\textit{\url{https://www.terraless.com}}} % [cite: 24]
+  {AetherRuin} % [cite: 18]
+  {\textit{\href{https://www.aetherruin.com}{www.aetherruin.com}}} % [cite: 24]
   {}
   {
   \begin{itemize}\setlength{\itemsep}{2pt}
-    \item Architected a high-performance SaaS platform using an AWS Serverless control plane (Lambda, DynamoDB, Cognito) to manage stateful Hetzner Cloud instances, reducing hosting costs by 90\%. % 
+    \item Architected a hybrid cloud SaaS platform using AWS and Cloudflare Workers to orchestrate stateful game servers via REST APIs while reducing hosting costs by 90\%. % 
     \item Engineered a storage layer on NVMe using Btrfs, developing automated shell scripts for incremental snapshots with data freeze times under 100ms and a 60s RTO. % [cite: 21, 22]
     \item Designed a rule-based automation engine in Node.js to trigger auto-shutdown policies based on real-time metrics, slashing active compute runtime by 60--80\%. % 
     \item Designed a scalable Nginx-based ingress layer to shield backend IPs and implemented automated firewall rules for DDoS mitigation across game nodes. % [cite: 23]
@@ -86,13 +86,13 @@
   {}
   {Serverless Resume Infrastructure}
   {AI-Latex-Editor}
-  {\textit{\url{https://github.com/Vishhh03/Latex-Resume}}}
+  {\textit{\href{https://github.com/Vishhh03/Latex-Resume}{github.com/Vishhh03/Latex-Resume}}}
   {}
   {
   \begin{itemize}\setlength{\itemsep}{2pt}
     \item Provisioned AWS infrastructure via Terraform IaC (ECS Fargate Spot, Lambda, SNS, IAM), reducing monthly cost from \$50+ (always-on EC2) to under \$1.
     \item Engineered wake-on-demand architecture with 60s cold start and auto-shutdown after 10min idle, cutting compute hours by 95\%.
-    \item Implemented Budget Kill Switch (SNS + Lambda) to auto-disable infrastructure when spend exceeds \$5/month threshold.
+    \item Implemented Budget Kill Switch (SNS+Lambda) to auto-disable infrastructure when spend exceeds \$5/month.
     \item Integrated Amazon Bedrock (Qwen) for AI-driven LaTeX patching with xelatex compilation and auto-commit to GitHub.
   \end{itemize}
   }
@@ -116,10 +116,10 @@
 % --- TECHNICAL SKILLS ---
 \section{Technical Skills}
 
-\cvitem{Cloud \& Infra}{AWS (Lambda, DynamoDB, Cognito, EC2, S3, CloudWatch, ECS), Hybrid-Cloud (AWS + Hetzner), Docker, Kubernetes, Terraform, Serverless Framework} % [cite: 38]
-\cvitem{DevOps}{GitHub Actions, Git, Bash Scripting, Prometheus, Grafana, ELK Stack (Elasticsearch, Logstash, Kibana)} % [cite: 38]
+\cvitem{Development}{Python, JavaScript, C\#, SQL, Next.js, React, .NET Core, FastAPI, Node.js} % [cite: 39, 40]
 \cvitem{Systems}{Linux (Ubuntu, Amazon Linux), Btrfs Filesystem, Nginx Reverse Proxy, DDoS Mitigation, RCON Protocol} % [cite: 42]
-\cvitem{Development}{Node.js, Python, JavaScript, C\#, SQL, Next.js, React, Angular, .NET Core} % [cite: 39, 40]
+\cvitem{Cloud \& Infra}{AWS (Lambda, DynamoDB, Cognito, EC2, S3, CloudWatch, ECS), Cloudflare, Hetzner, Docker, Kubernetes, Terraform, Serverless Framework} % [cite: 38]
+\cvitem{DevOps}{GitHub Actions, Git, Bash Scripting, Prometheus, Grafana, ELK Stack (Elasticsearch, Logstash, Kibana)} % [cite: 38]
 \cvitem{Databases}{PostgreSQL, SQL Server, DynamoDB, MongoDB, RDS} % [cite: 41]
 
 % --- CERTIFICATIONS ---
@@ -128,5 +128,9 @@
 \cvitem{}{AWS Certified Cloud Practitioner} % [cite: 44]
 \cvitem{}{AWS Certified AI Practitioner} % [cite: 45]
 \cvitem{}{OCI Associate Architect} % [cite: 46]
+% --- OPEN SOURCE ---
+\section{Open Source Contributions}
+
+\cvitem{}{Contributed merged pull requests to \textbf{freeCodeCamp} }
 
 \end{document}
