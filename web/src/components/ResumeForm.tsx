@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { updateResume } from '@/lib/api';
 
 interface ResumeFormProps {
-    onSuccess: (newLatex: string, newPdfUrl: string) => void;
+    onSuccess: (newData: any, newPdfUrl: string) => void;
     apiUrl: string;
     version: string;
 }
@@ -24,20 +24,17 @@ export default function ResumeForm({ onSuccess, apiUrl, version }: ResumeFormPro
         setMessage('');
 
         try {
-            // Commit is now MANUAL. We pass nothing for commit param (defaults false in api wrapper).
             const result = await updateResume(instruction, jobDescription, apiUrl, version);
 
             if (result.error) throw new Error(result.error);
-            if (!result.latex) throw new Error("No LaTeX returned");
 
             setStatus('success');
-            setMessage(`Success! Update applied.`);
+            setMessage(`Success! Structured update applied.`);
             setInstruction('');
             setJobDescription('');
             setShowJD(false);
 
-            // Pass the new state up using the returned latex and pdf signature
-            onSuccess(result.latex, result.pdfUrl || '');
+            onSuccess(result.data || result, result.pdf_base64 ? `data:application/pdf;base64,${result.pdf_base64}` : (result.pdfUrl || ''));
 
         } catch (error) {
             setStatus('error');

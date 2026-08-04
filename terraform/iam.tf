@@ -1,71 +1,62 @@
-# ECS Execution Role
-resource "aws_iam_role" "execution" {
-  name = "resume-exec-role"
+resource "aws_iam_role" "lambda_execution" {
+  name = "resume_editor_lambda_role"
+
   assume_role_policy = jsonencode({
-    Version = "2012-10-17", Statement = [{ Action = "sts:AssumeRole", Effect = "Allow", Principal = { Service = "ecs-tasks.amazonaws.com" } }]
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = "sts:AssumeRole"
+        Effect = "Allow"
+        Principal = {
+          Service = "lambda.amazonaws.com"
+        }
+      }
+    ]
   })
+
+  tags = var.tags
 }
 
-resource "aws_iam_role_policy_attachment" "execution_standard" {
-  role       = aws_iam_role.execution.name
-  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
-}
+resource "aws_iam_policy" "lambda_policy" {
+  name = "resume_editor_lambda_policy"
 
-# ECS Task Role (App Permissions)
-resource "aws_iam_role" "task" {
-  name = "resume-task-role"
-  assume_role_policy = jsonencode({
-    Version = "2012-10-17", Statement = [{ Action = "sts:AssumeRole", Effect = "Allow", Principal = { Service = "ecs-tasks.amazonaws.com" } }]
-  })
-}
-
-resource "aws_iam_role_policy" "task_perms" {
-  name = "resume-app-permissions"
-  role = aws_iam_role.task.id
   policy = jsonencode({
-    Version = "2012-10-17", Statement = [
-      { Action = ["ecs:StopTask"], Effect = "Allow", Resource = "*" },
-      { Action = ["bedrock:InvokeModel"], Effect = "Allow", Resource = "arn:aws:bedrock:${var.aws_region}::foundation-model/qwen.*" },
-      { Action = ["dynamodb:GetItem", "dynamodb:UpdateItem"], Effect = "Allow", Resource = aws_dynamodb_table.spend_shield.arn }
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "logs:CreateLogGroup",
+          "logs:CreateLogStream",
+          "logs:PutLogEvents"
+        ]
+        Resource = "arn:aws:logs:*:*:*"
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "bedrock:InvokeModel",
+          "bedrock:Converse"
+        ]
+        Resource = "*"
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "s3:GetObject",
+          "s3:PutObject",
+          "s3:ListBucket"
+        ]
+        Resource = [
+          aws_s3_bucket.resume_bucket.arn,
+          "${aws_s3_bucket.resume_bucket.arn}/*"
+        ]
+      }
     ]
   })
 }
 
-# Lambda Wakeup Role
-resource "aws_iam_role" "wakeup_role" {
-  name = "resume_wakeup_role"
-  assume_role_policy = jsonencode({
-    Version = "2012-10-17", Statement = [{ Action = "sts:AssumeRole", Effect = "Allow", Principal = { Service = "lambda.amazonaws.com" } }]
-  })
-}
-
-resource "aws_iam_role_policy" "wakeup_policy" {
-  role = aws_iam_role.wakeup_role.id
-  policy = jsonencode({
-    Version = "2012-10-17", Statement = [
-      { Action = ["ecs:RunTask", "ecs:ListTasks", "ecs:DescribeTasks", "ec2:DescribeNetworkInterfaces"], Effect = "Allow", Resource = "*" },
-      { Action = ["dynamodb:GetItem"], Effect = "Allow", Resource = aws_dynamodb_table.spend_shield.arn },
-      { Action = ["iam:PassRole"], Effect = "Allow", Resource = [aws_iam_role.execution.arn, aws_iam_role.task.arn] },
-      { Action = ["logs:CreateLogGroup", "logs:CreateLogStream", "logs:PutLogEvents"], Effect = "Allow", Resource = "*" }
-    ]
-  })
-}
-
-# Budget Kill Role
-resource "aws_iam_role" "budget_kill_role" {
-  name = "resume_budget_kill_role"
-  assume_role_policy = jsonencode({
-    Version = "2012-10-17", Statement = [{ Action = "sts:AssumeRole", Effect = "Allow", Principal = { Service = "lambda.amazonaws.com" } }]
-  })
-}
-
-resource "aws_iam_role_policy" "budget_kill_policy" {
-  role = aws_iam_role.budget_kill_role.id
-  policy = jsonencode({
-    Version = "2012-10-17", Statement = [
-      { Action = ["ecs:StopTask", "ecs:ListTasks", "ecs:DescribeTasks"], Effect = "Allow", Resource = "*" },
-      { Action = ["lambda:PutFunctionConcurrency"], Effect = "Allow", Resource = "*" }, # Needs to update other lambdas
-      { Action = ["logs:CreateLogGroup", "logs:CreateLogStream", "logs:PutLogEvents"], Effect = "Allow", Resource = "*" }
-    ]
-  })
+resource "aws_iam_role_policy_attachment" "lambda_attach" {
+  role       = aws_iam_role.lambda_execution.name
+  policy_arn = aws_iam_policy.lambda_policy.arn
 }

@@ -1,7 +1,0 @@
-{
-    "taskArns": [
-        "arn:aws:ecs:us-east-1:767398109562:task/resume-cluster/163ac14518194d73b4be430f6dc32cc3",
-        "arn:aws:ecs:us-east-1:767398109562:task/resume-cluster/9c2e99388f514b15b414806980299ee5",
-        "arn:aws:ecs:us-east-1:767398109562:task/resume-cluster/cee98ec1b36a45f2856876bdcf7ee4f7"
-    ]
-}

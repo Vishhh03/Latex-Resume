@@ -1,51 +1,33 @@
 # Local Development Setup
 
-This guide explains how to run the AI Resume Architect locally using Docker.
+This guide explains how to run and test the Serverless Typst Resume Architect locally.
 
 ## Prerequisites
 
-- [Docker Desktop](https://www.docker.com/products/docker-desktop) installed and running.
-- [Git](https://git-scm.com/) installed.
+- [Python 3.11+](https://www.python.org/) installed.
+- [Typst CLI](https://typst.app/) installed (`winget install Typst.Typst` on Windows or `brew install typst` on macOS).
 
 ## Quick Start
 
-1. **Build the Docker Image**
-   Run following command in the root of the repository:
+1. **Install Dependencies**
    ```bash
-   docker build -t resume-local .
+   cd lambda_src
+   pip install -r requirements.txt
    ```
 
-2. **Run the Container**
-   Replace the placeholder values with your actual GitHub configuration:
+2. **Test Typst Template Compilation**
+   To test rendering `resume.json` to `resume.pdf` locally:
    ```bash
-   docker run --rm -p 8000:8000 \
-     -e GITHUB_TOKEN=your_github_pat_token \
-     -e REPO_OWNER=your_github_username \
-     -e REPO_NAME=Latex-Resume \
-     -e CLUSTER_NAME=local-test \
-     resume-local
+   typst compile --root .. template.typ resume.pdf
    ```
-   
-   *Note: If you are on Windows PowerShell, use backticks (`) for line continuation or put it all on one line.*
 
-3. **Access the Application**
-   Open your browser and navigate to:
-   [http://localhost:8000](http://localhost:8000)
+3. **Run Lambda Handler Locally**
+   You can invoke `lambda_src/handler.py` locally using Python or AWS SAM CLI:
+   ```bash
+   python -c "import lambda_src.handler as h; print(h.handler({'rawPath': '/resume', 'requestContext': {'http': {'method': 'GET'}}}, None))"
+   ```
 
-## Features Available Locally for Testing
-
-- **Dark Mode UI**: The dashboard loads with the dark theme.
-- **Manual Editor**: Edit LaTeX code and see updates.
-- **Auto-Compile**: Preview updates automatically ~1.5s after typing.
-- **Error Handling**: Compilation errors are displayed in a red panel in the editor.
-- **PDF Download**: Download the generated PDF directly.
-- **Mocked AI**: The AI updates (`/update` endpoint) will try to call Bedrock. If you don't have AWS credentials configured in the container, it may fail. For full AI testing, you need to pass AWS credentials (not recommended for simple CSS/UI testing).
-
-## Troubleshooting
-
-- **Container crashes?** Check logs:
-  ```bash
-  docker logs <container_id>
-  ```
-- **Port 8000 already in use?**
-  Identify and stop the process or run on a different port (e.g., `-p 8080:8000`).
+## Features Available Locally
+- **Sub-20ms Rendering**: Typst compiles `template.typ` + `resume.json` instantly.
+- **JSON Resume Schema**: Formatted resume fields matching standard JSON resume specifications.
+- **Bedrock Converse API Testing**: Pass `AWS_PROFILE` or AWS environment credentials to test AI edits.
