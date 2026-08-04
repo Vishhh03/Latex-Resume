@@ -1,5 +1,6 @@
 import json
 import os
+import sys
 import subprocess
 import base64
 import urllib.request
@@ -61,11 +62,11 @@ def compile_typst(resume_data):
 
     template_path = "./template.typ" if os.path.exists("./template.typ") else os.path.join(work_dir, "template.typ")
 
-    # Find typst executable
+    # Find typst executable safely per platform
     typst_bin = "typst"
-    if os.path.exists("./typst.exe"):
+    if sys.platform == "win32" and os.path.exists("./typst.exe"):
         typst_bin = "./typst.exe"
-    elif os.path.exists("./typst"):
+    elif sys.platform != "win32" and os.path.exists("./typst"):
         typst_bin = "./typst"
 
     root_dir = os.path.abspath(os.path.dirname(template_path))

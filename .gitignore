@@ -20,12 +20,14 @@ venv.bak/
 .DS_Store
 Thumbs.db
 
-# Build Artifacts
+# Build & Executable Artifacts
 *.pdf
 *.log
 *.aux
 *.out
 *.synctex.gz
+*.exe
+typst
 
 # Terraform
 .terraform/
