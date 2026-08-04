@@ -6,7 +6,7 @@
 )
 
 #set text(
-  font: "Liberation Sans",
+  font: "Arial",
   size: 9.5pt,
   fill: rgb("#111827"),
 )

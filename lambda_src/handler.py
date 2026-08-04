@@ -5,13 +5,14 @@ import base64
 import urllib.request
 import boto3
 
-bedrock = boto3.client("bedrock-runtime", region_name="us-east-1")
-s3 = boto3.client("s3", region_name="us-east-1")
+bedrock = boto3.client("bedrock-runtime", region_name=os.environ.get("AWS_REGION", "us-east-1"))
+s3 = boto3.client("s3", region_name=os.environ.get("AWS_REGION", "us-east-1"))
 
 BUCKET_NAME = os.environ.get("S3_BUCKET_NAME", "")
 GITHUB_TOKEN = os.environ.get("GITHUB_TOKEN", "")
 REPO_OWNER = os.environ.get("REPO_OWNER", "")
 REPO_NAME = os.environ.get("REPO_NAME", "")
+BEDROCK_MODEL_ID = os.environ.get("BEDROCK_MODEL_ID", "us.amazon.nova-micro-v1:0")
 
 RESUME_SCHEMA = {
     "type": "object",
@@ -118,16 +119,25 @@ def get_current_resume():
     return {}
 
 def compile_typst(resume_data):
-    # Write JSON to /tmp/resume.json
-    with open("/tmp/resume.json", "w") as f:
+    work_dir = "/tmp" if os.path.exists("/tmp") else "."
+    json_path = os.path.join(work_dir, "resume.json")
+    pdf_out = os.path.join(work_dir, "resume.pdf")
+
+    # Write JSON data
+    with open(json_path, "w") as f:
         json.dump(resume_data, f, indent=2)
 
-    template_path = "./template.typ" if os.path.exists("./template.typ") else "/tmp/template.typ"
-    pdf_out = "/tmp/resume.pdf"
+    template_path = "./template.typ" if os.path.exists("./template.typ") else os.path.join(work_dir, "template.typ")
 
-    # Execute typst binary
-    typst_bin = "./typst" if os.path.exists("./typst") else "typst"
-    cmd = [typst_bin, "compile", "--root", "/tmp", template_path, pdf_out]
+    # Find typst executable
+    typst_bin = "typst"
+    if os.path.exists("./typst.exe"):
+        typst_bin = "./typst.exe"
+    elif os.path.exists("./typst"):
+        typst_bin = "./typst"
+
+    root_dir = os.path.abspath(os.path.dirname(template_path))
+    cmd = [typst_bin, "compile", "--root", root_dir, template_path, pdf_out]
     
     proc = subprocess.run(cmd, capture_output=True, text=True)
     if proc.returncode != 0:
@@ -204,9 +214,9 @@ def handler(event, context):
                 f"Output the complete updated JSON resume strictly adhering to the schema."
             )
 
-            # Bedrock Converse API with Tool Use / Structured JSON Output
+            # Bedrock Converse API with Structured JSON Output
             response = bedrock.converse(
-                modelId="qwen.qwen3-32b-v1:0",
+                modelId=BEDROCK_MODEL_ID,
                 messages=[
                     {
                         "role": "user",
@@ -228,7 +238,7 @@ def handler(event, context):
                 updated_resume = json.loads(response_text)
 
             # Save to /tmp
-            with open("/tmp/resume.json", "w") as f:
+            with open("/tmp/resume.json" if os.path.exists("/tmp") else "resume.json", "w") as f:
                 json.dump(updated_resume, f, indent=2)
 
             pdf_bytes = compile_typst(updated_resume)
