@@ -19,7 +19,7 @@ const c = {
 const CONFIG = {
     name: 'Serverless Typst Resume Editor',
     github: 'https://github.com/Vishhh03/Latex-Resume',
-    apiUrl: process.env.RESUME_API_URL || 'https://resume-api.lambda-url.us-east-1.on.aws/',
+    apiUrl: process.env.RESUME_API_URL || 'https://oo7fsr4cy32q42bzkpgwhy7asu0hzaod.lambda-url.us-east-1.on.aws/',
 };
 
 const banner = `
