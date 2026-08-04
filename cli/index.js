@@ -19,6 +19,7 @@ const c = {
 const CONFIG = {
     name: 'Serverless Typst Resume Editor',
     github: 'https://github.com/Vishhh03/Latex-Resume',
+    webUrl: process.env.RESUME_WEB_URL || 'http://localhost:3000',
     apiUrl: process.env.RESUME_API_URL || 'https://oo7fsr4cy32q42bzkpgwhy7asu0hzaod.lambda-url.us-east-1.on.aws/',
 };
 
@@ -44,8 +45,8 @@ function openUrl(url) {
 
 async function startSession() {
     console.log(`\n${c.green}⚡ Serverless Typst Backend Active (< 1s cold start)${c.reset}`);
-    console.log(`${c.dim}Opening editor interface...${c.reset}\n`);
-    openUrl(CONFIG.apiUrl);
+    console.log(`${c.dim}Opening editor interface (${CONFIG.webUrl})...${c.reset}\n`);
+    openUrl(CONFIG.webUrl);
 }
 
 function showHowItWorks() {
