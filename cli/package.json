@@ -3,8 +3,9 @@
     "version": "1.0.0",
     "description": "Lightning-fast Serverless Typst & AI Resume Editor",
     "bin": {
-        "typst-resume-cli": "./index.js",
-        "latex-resume-cli": "./index.js"
+        "typst-resume": "index.js",
+        "typst-resume-cli": "index.js",
+        "latex-resume-cli": "index.js"
     },
     "keywords": [
         "typst",
@@ -19,7 +20,7 @@
     "license": "MIT",
     "repository": {
         "type": "git",
-        "url": "https://github.com/Vishhh03/Latex-Resume"
+        "url": "git+https://github.com/Vishhh03/Latex-Resume.git"
     },
     "engines": {
         "node": ">=14"
