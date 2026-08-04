@@ -42,10 +42,19 @@ def create_response(status_code, body, content_type="application/json"):
 def get_current_resume():
     tmp_path = "/tmp/resume.json"
     if os.path.exists(tmp_path):
-        with open(tmp_path, "r") as f:
+        try:
+            with open(tmp_path, "r") as f:
+                data = json.load(f)
+                if data:
+                    return data
+        except Exception:
+            pass
+
+    pkg_json = os.path.join(os.path.dirname(__file__), "resume.json")
+    if os.path.exists(pkg_json):
+        with open(pkg_json, "r") as f:
             return json.load(f)
-    
-    # Fallback to local package copy
+
     if os.path.exists("./resume.json"):
         with open("./resume.json", "r") as f:
             return json.load(f)
@@ -60,7 +69,9 @@ def compile_typst(resume_data):
     with open(json_path, "w") as f:
         json.dump(resume_data, f, indent=2)
 
-    template_path = "./template.typ" if os.path.exists("./template.typ") else os.path.join(work_dir, "template.typ")
+    template_path = os.path.join(os.path.dirname(__file__), "template.typ")
+    if not os.path.exists(template_path):
+        template_path = "./template.typ"
 
     # Find typst executable safely per platform
     typst_bin = "typst"
