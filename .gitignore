@@ -1,7 +1,16 @@
-# AWS SAM
+# Node & Next.js
+node_modules/
+.next/
+out/
+.vercel
+package-lock.json
+
+# AWS SAM & Lambda Zips
 .aws-sam/
 samconfig.toml
 template-generated.yaml
+*.zip
+handler.zip
 
 # Python
 __pycache__/
@@ -34,15 +43,20 @@ typst
 *.tfstate
 *.tfstate.backup
 terraform.tfvars
+terraform.tfstate*
+*.tfvars
 
-# Local Server
+# Local Server & Temp
 temp_builds/
 local_history.json
 __pycache__/
+/tmp/
 
-# Secrets
+# Secrets & Credentials
 .env.local
 .env
+*.pem
+*.csv
 LatexResume_credentials.csv
 
 # Lambda Dependencies

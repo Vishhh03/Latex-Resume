@@ -20,6 +20,7 @@ resource "aws_sns_topic_policy" "default" {
 }
 
 resource "aws_sns_topic_subscription" "email" {
+  count     = var.budget_alert_email != "" ? 1 : 0
   topic_arn = aws_sns_topic.budget_alerts.arn
   protocol  = "email"
   endpoint  = var.budget_alert_email
