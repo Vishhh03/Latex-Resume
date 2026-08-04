@@ -1,18 +1,21 @@
 {
-    "name": "latex-resume-cli",
+    "name": "typst-resume-cli",
     "version": "1.0.0",
-    "description": "Interactive CLI to launch the AI Resume Editor",
+    "description": "Lightning-fast Serverless Typst & AI Resume Editor",
     "bin": {
+        "typst-resume-cli": "./index.js",
         "latex-resume-cli": "./index.js"
     },
     "keywords": [
+        "typst",
         "resume",
         "cli",
         "portfolio",
         "developer",
-        "business-card"
+        "typst-resume",
+        "ai-resume"
     ],
-    "author": "Vishal",
+    "author": "Vishal Shaji",
     "license": "MIT",
     "repository": {
         "type": "git",

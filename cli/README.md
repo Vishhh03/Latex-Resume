@@ -1,10 +1,11 @@
-# latex-resume-cli
+# typst-resume-cli
 
-Interactive terminal for the Serverless AI Resume Editor.
+Interactive terminal for the Serverless Typst AI Resume Editor.
 
 ```bash
-npx latex-resume-cli
+npx typst-resume-cli
 ```
+*(Also available via `npx latex-resume-cli`)*
 
 ## What it does
 
