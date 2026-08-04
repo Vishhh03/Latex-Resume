@@ -1,5 +1,5 @@
-github_token            = "ghp_YOUR_TOKEN_HERE"
-repo_owner              = "Vishhh03"
-repo_name               = "Latex-Resume"
-aws_region              = "us-east-1"
-cloudflare_tunnel_token = "" # Get from Cloudflare Zero Trust → Tunnels
+github_token       = "ghp_YOUR_TOKEN_HERE"
+repo_owner         = "Vishhh03"
+repo_name          = "Latex-Resume"
+aws_region         = "us-east-1"
+budget_alert_email = "your-email@example.com"
