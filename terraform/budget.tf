@@ -1,14 +1,9 @@
-variable "budget_alert_email" {
-  description = "Email to receive budget alerts"
-  default     = "vishshaji03@gmail.com"
-}
-
 resource "aws_budgets_budget" "monthly_cost" {
-  name              = "monthly-budget"
-  budget_type       = "COST"
-  limit_amount      = "5.0"
-  limit_unit        = "USD"
-  time_unit         = "MONTHLY"
+  name         = "monthly-budget"
+  budget_type  = "COST"
+  limit_amount = "5.0"
+  limit_unit   = "USD"
+  time_unit    = "MONTHLY"
 
   # Alert when 80% of budget is used ($4.00)
   notification {

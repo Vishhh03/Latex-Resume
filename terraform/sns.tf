@@ -24,9 +24,3 @@ resource "aws_sns_topic_subscription" "email" {
   protocol  = "email"
   endpoint  = var.budget_alert_email
 }
-
-resource "aws_sns_topic_subscription" "lambda" {
-  topic_arn = aws_sns_topic.budget_alerts.arn
-  protocol  = "lambda"
-  endpoint  = aws_lambda_function.budget_kill.arn
-}
