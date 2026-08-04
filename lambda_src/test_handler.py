@@ -31,9 +31,8 @@ class TestResumeServerlessBackend(unittest.TestCase):
         """Verify template.typ exists in root."""
         self.assertTrue(os.path.exists("./template.typ"), "template.typ should exist in root")
 
-    @unittest.skipIf(not subprocess.run(["where", "typst"], capture_output=True).returncode == 0, "Typst CLI not installed on host")
     def test_typst_compilation_local(self):
-        """Test local Typst compilation using typst CLI if installed."""
+        """Test local Typst compilation using typst CLI."""
         with open("./resume.json", "r") as f:
             data = json.load(f)
         pdf_bytes = compile_typst(data)
@@ -49,6 +48,59 @@ class TestResumeServerlessBackend(unittest.TestCase):
         self.assertEqual(res["statusCode"], 200)
         body = json.loads(res["body"])
         self.assertEqual(body["basics"]["name"], "Vishal Shaji")
+
+    def test_handler_cors_options(self):
+        """Test OPTIONS preflight endpoint."""
+        event = {
+            "rawPath": "/update",
+            "requestContext": {"http": {"method": "OPTIONS"}}
+        }
+        res = handler(event, None)
+        self.assertEqual(res["statusCode"], 200)
+        self.assertIn("Access-Control-Allow-Origin", res["headers"])
+
+    def test_handler_404_not_found(self):
+        """Test invalid route returns 404."""
+        event = {
+            "rawPath": "/invalid-route",
+            "requestContext": {"http": {"method": "GET"}}
+        }
+        res = handler(event, None)
+        self.assertEqual(res["statusCode"], 404)
+
+    def test_handler_update_missing_instruction(self):
+        """Test POST /update with empty body returns 400 Bad Request."""
+        event = {
+            "rawPath": "/update",
+            "requestContext": {"http": {"method": "POST"}},
+            "body": json.dumps({})
+        }
+        res = handler(event, None)
+        self.assertEqual(res["statusCode"], 400)
+        body = json.loads(res["body"])
+        self.assertIn("error", body)
+
+    def test_handler_post_commit_no_credentials(self):
+        """Test POST /commit without GitHub credentials returns 400."""
+        event = {
+            "rawPath": "/commit",
+            "requestContext": {"http": {"method": "POST"}},
+            "body": json.dumps({"message": "Test commit"})
+        }
+        res = handler(event, None)
+        self.assertEqual(res["statusCode"], 400)
+
+    @patch("lambda_src.handler.compile_typst")
+    def test_handler_get_pdf(self, mock_compile):
+        """Test GET /pdf endpoint returns base64 PDF."""
+        mock_compile.return_value = b"%PDF-1.4 Fake PDF Content"
+        event = {
+            "rawPath": "/pdf",
+            "requestContext": {"http": {"method": "GET"}}
+        }
+        res = handler(event, None)
+        self.assertEqual(res["statusCode"], 200)
+        self.assertTrue(res.get("isBase64Encoded"))
 
     @patch("lambda_src.handler.bedrock")
     @patch("lambda_src.handler.compile_typst")
