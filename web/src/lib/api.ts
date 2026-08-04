@@ -7,6 +7,13 @@ export interface UpdateResponse {
     details?: string;
 }
 
+export interface Commit {
+    sha: string;
+    message: string;
+    author: string;
+    date: string;
+}
+
 export interface CommitResponse {
     status: string;
     pushed?: boolean;
@@ -69,4 +76,16 @@ export async function commitChanges(
         }
         throw error;
     }
+}
+
+export async function getHistory(baseUrl: string): Promise<Commit[]> {
+    try {
+        const response = await fetch(`${baseUrl}/history`);
+        if (response.ok) {
+            return response.json();
+        }
+    } catch (e) {
+        console.error("History fetch failed", e);
+    }
+    return [];
 }
