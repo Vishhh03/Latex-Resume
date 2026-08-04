@@ -1,0 +1,39 @@
+name: Deploy Serverless Lambda Backend
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'lambda_src/**'
+      - 'resume.json'
+      - 'template.typ'
+
+env:
+  AWS_REGION: us-east-1
+  LAMBDA_FUNCTION_NAME: resume-editor-api
+
+jobs:
+  deploy:
+    name: Deploy to AWS Lambda
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Package Lambda Source
+        run: |
+          zip -r handler.zip lambda_src/ resume.json template.typ -x "*.git*" "lambda_src/__pycache__/*" "lambda_src/tests/*"
+
+      - name: Deploy Code to AWS Lambda
+        run: |
+          aws lambda update-function-code \
+            --function-name ${{ env.LAMBDA_FUNCTION_NAME }} \
+            --zip-file fileb://handler.zip

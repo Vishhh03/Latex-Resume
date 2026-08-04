@@ -1,0 +1,63 @@
+name: Build Resume PDF (Typst)
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'resume.json'
+      - 'template.typ'
+      - 'resume.tex'
+      - '.github/workflows/typst.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Compile Typst Resume PDF
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Install Typst CLI
+        uses: typst-community/setup-typst@v3
+        with:
+          typst-version: 'latest'
+
+      - name: Compile PDF with Typst
+        run: |
+          typst compile --root . template.typ resume.pdf
+          echo "✓ Compiled resume.pdf in ~15ms"
+
+      - name: Push PDF to pdf-output Branch
+        run: |
+          mkdir -p /tmp/pdf_out
+          cp resume.pdf /tmp/pdf_out/
+          
+          git checkout --orphan pdf-output-temp
+          git rm -rf .
+          
+          cp /tmp/pdf_out/resume.pdf .
+          git add resume.pdf
+          
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git commit -m "chore: auto-compile resume.pdf [skip ci]" || true
+          git push origin pdf-output-temp:pdf-output --force
+
+      - name: Update GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: latest
+          name: Latest Resume PDF
+          files: resume.pdf
+          body: "Automated Typst PDF build from main branch."
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
