@@ -14,82 +14,14 @@ REPO_OWNER = os.environ.get("REPO_OWNER", "")
 REPO_NAME = os.environ.get("REPO_NAME", "")
 BEDROCK_MODEL_ID = os.environ.get("BEDROCK_MODEL_ID", "us.amazon.nova-micro-v1:0")
 
-RESUME_SCHEMA = {
-    "type": "object",
-    "properties": {
-        "basics": {
-            "type": "object",
-            "properties": {
-                "name": {"type": "string"},
-                "title": {"type": "string"},
-                "email": {"type": "string"},
-                "phone": {"type": "string"},
-                "location": {"type": "string"},
-                "website": {"type": "string"},
-                "linkedin": {"type": "string"},
-                "github": {"type": "string"}
-            },
-            "required": ["name", "title", "email", "location"]
-        },
-        "work": {
-            "type": "array",
-            "items": {
-                "type": "object",
-                "properties": {
-                    "company": {"type": "string"},
-                    "position": {"type": "string"},
-                    "startDate": {"type": "string"},
-                    "endDate": {"type": "string"},
-                    "location": {"type": "string"},
-                    "highlights": {"type": "array", "items": {"type": "string"}}
-                },
-                "required": ["company", "position", "highlights"]
-            }
-        },
-        "projects": {
-            "type": "array",
-            "items": {
-                "type": "object",
-                "properties": {
-                    "name": {"type": "string"},
-                    "subtitle": {"type": "string"},
-                    "website": {"type": "string"},
-                    "github": {"type": "string"},
-                    "highlights": {"type": "array", "items": {"type": "string"}}
-                },
-                "required": ["name", "highlights"]
-            }
-        },
-        "education": {
-            "type": "array",
-            "items": {
-                "type": "object",
-                "properties": {
-                    "institution": {"type": "string"},
-                    "area": {"type": "string"},
-                    "studyType": {"type": "string"},
-                    "startDate": {"type": "string"},
-                    "endDate": {"type": "string"},
-                    "location": {"type": "string"},
-                    "highlights": {"type": "array", "items": {"type": "string"}}
-                }
-            }
-        },
-        "skills": {
-            "type": "array",
-            "items": {
-                "type": "object",
-                "properties": {
-                    "name": {"type": "string"},
-                    "keywords": {"type": "array", "items": {"type": "string"}}
-                }
-            }
-        },
-        "certifications": {"type": "array", "items": {"type": "string"}},
-        "openSource": {"type": "array", "items": {"type": "string"}}
-    },
-    "required": ["basics", "work", "projects", "education", "skills"]
-}
+def load_resume_schema():
+    schema_path = "./schema.json" if os.path.exists("./schema.json") else os.path.join(os.path.dirname(__file__), "schema.json")
+    if os.path.exists(schema_path):
+        with open(schema_path, "r") as f:
+            return json.load(f)
+    return {}
+
+RESUME_SCHEMA = load_resume_schema()
 
 def create_response(status_code, body, content_type="application/json"):
     headers = {

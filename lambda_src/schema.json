@@ -1,0 +1,84 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ResumeSchema",
+  "type": "object",
+  "properties": {
+    "basics": {
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "title": { "type": "string" },
+        "email": { "type": "string" },
+        "phone": { "type": "string" },
+        "location": { "type": "string" },
+        "website": { "type": "string" },
+        "linkedin": { "type": "string" },
+        "github": { "type": "string" }
+      },
+      "required": ["name", "title", "email", "location"]
+    },
+    "work": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "company": { "type": "string" },
+          "position": { "type": "string" },
+          "startDate": { "type": "string" },
+          "endDate": { "type": "string" },
+          "location": { "type": "string" },
+          "highlights": { "type": "array", "items": { "type": "string" } }
+        },
+        "required": ["company", "position", "highlights"]
+      }
+    },
+    "projects": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string" },
+          "subtitle": { "type": "string" },
+          "website": { "type": "string" },
+          "github": { "type": "string" },
+          "highlights": { "type": "array", "items": { "type": "string" } }
+        },
+        "required": ["name", "highlights"]
+      }
+    },
+    "education": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "institution": { "type": "string" },
+          "area": { "type": "string" },
+          "studyType": { "type": "string" },
+          "startDate": { "type": "string" },
+          "endDate": { "type": "string" },
+          "location": { "type": "string" },
+          "highlights": { "type": "array", "items": { "type": "string" } }
+        }
+      }
+    },
+    "skills": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string" },
+          "keywords": { "type": "array", "items": { "type": "string" } }
+        }
+      }
+    },
+    "certifications": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "openSource": {
+      "type": "array",
+      "items": { "type": "string" }
+    }
+  },
+  "required": ["basics", "work", "projects", "education", "skills"]
+}
