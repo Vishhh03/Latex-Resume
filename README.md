@@ -1,87 +1,130 @@
-# Serverless Typst Resume Editor
+# Typst Resume Architecture & AI Editor
+
+Interactive, serverless resume editor powered by **Typst**, **AWS Lambda**, and the **Amazon Bedrock Converse API**.
 
 ```bash
-npx latex-resume-cli
+npx typst-resume-cli
 ```
-
-An ultra-fast, serverless resume editor powered by **Typst**, **AWS Lambda**, and **Amazon Bedrock (Converse API)**.
-
-Tell it what you want in plain English (*"add 2 years at Google doing Kubernetes stuff"*), and AI updates your resume with 100% structured JSON precision. Compiles in **~15 milliseconds** with **<1s cold start** and costs **$0/month** when idle.
 
 ---
 
-## ⚡ Key Upgrades (Typst + Lambda Migration)
+## Technical Overview
 
-| Feature | Old Architecture | New Serverless Typst Stack |
+This repository hosts a data-driven resume infrastructure that decouples resume content from document formatting. Content is stored as structured JSON (`resume.json`), while layout and typography are controlled by a high-performance Typst template (`template.typ`).
+
+AI-assisted resume modifications are processed via the Amazon Bedrock Converse API using strict JSON Schema enforcement. This guarantees schema-compliant resume edits without formatting errors or compilation failures.
+
+### Performance Benchmarks
+
+| Metric | Legacy Stack (XeLaTeX + ECS Fargate) | Serverless Typst Stack |
 | :--- | :--- | :--- |
-| **Engine** | TeX Live (~2GB, `xelatex`) | **Typst** (~15MB Rust Binary) |
-| **Compute Stack** | ECS Fargate Spot + Cloudflare Tunnel | **AWS Lambda Function URL** |
-| **Cold Start** | 45 – 60 seconds | **< 1 second** |
-| **PDF Compilation** | 2 – 4 seconds | **~15 milliseconds** |
-| **AI Editing Engine** | Raw String Regex Patching | **Bedrock Converse API + JSON Schema** |
-| **Idle Cost** | $0/hr idle (complex wake/stop Lambdas) | **$0/month** (Serverless Free Tier) |
+| **Document Compiler** | TeX Live (`xelatex` ~2GB container) | **Typst** (~15MB binary) |
+| **Compute Engine** | AWS ECS Fargate Spot + Cloudflare Tunnel | **AWS Lambda Function URL** |
+| **Cold Start Latency** | 45 – 60 seconds | **< 1 second** |
+| **Compilation Latency** | 2,000 – 4,000 ms | **~15 ms** |
+| **LLM Output Guarantees** | String regex repair | **Bedrock Converse JSON Schema** |
+| **Idle Infrastructure Cost** | Scaled-to-zero container polling | **$0.00 / month** (AWS Free Tier) |
 
 ---
 
-## 🏗️ How It Works
+## System Architecture
 
 ```
-You: "Add 2 years at Google doing Kubernetes"
-     ↓
-AWS Lambda (Function URL)
-     ↓
-Amazon Bedrock (Converse API w/ JSON Schema) → Generates typed resume JSON
-     ↓
-Typst Engine (~15ms compile) → Generates PDF preview
-     ↓
-Accept → Auto-commits resume.json to GitHub via REST API
+[ User Input (CLI / Web UI) ]
+            │
+            ▼
+[ AWS Lambda (Python 3.11 + Typst Binary) ]
+            │
+            ├──▶ [ Amazon Bedrock Converse API ]  ──▶ Structured JSON Schema Update
+            ├──▶ [ Typst Compiler Engine ]        ──▶ Sub-20ms PDF Rendering
+            └──▶ [ GitHub REST API ]              ──▶ Direct Commit to main
 ```
 
 ---
 
-## 🛠️ Architecture Overview
+## Repository Structure
 
-- **Typst**: Modern markup language compiled in sub-20ms with a tiny ~15MB binary.
-- **AWS Lambda**: Serverless backend handling API requests, Bedrock LLM calls, and Typst compilation.
-- **Amazon Bedrock**: Powering AI editing via Qwen/Claude using Bedrock's Converse API with structured JSON output guarantees.
-- **Next.js Frontend**: Clean web interface for live side-by-side JSON/PDF preview and AI prompt interaction.
+```
+.
+├── lambda_src/         # Python 3.11 AWS Lambda backend & handler logic
+│   ├── handler.py      # Core API router (/resume, /pdf, /update, /commit)
+│   ├── schema.json     # Draft-07 JSON Schema definition
+│   └── test_handler.py # Automated backend unit test suite
+├── terraform/          # Infrastructure-as-Code (IaC) configuration
+│   ├── lambda.tf       # Lambda Function & Function URL resource
+│   ├── iam.tf          # Execution roles & GitHub Actions OIDC provider
+│   ├── storage.tf      # S3 bucket for draft storage
+│   └── budget.tf       # AWS budget cost control & alerts
+├── web/                # Next.js frontend preview dashboard
+├── cli/                # Terminal CLI (npx typst-resume-cli)
+├── template.typ        # Typst document layout & typography rules
+└── resume.json         # Master candidate data source
+```
 
 ---
 
-## 🚀 Quick Setup & Deploy
+## Local Development & Testing
+
+### 1. Compile PDF Locally
+Compile `resume.json` using the local Typst binary:
+```powershell
+.\typst.exe compile template.typ resume.pdf
+```
+
+To watch for file edits and recompile automatically:
+```powershell
+.\typst.exe watch template.typ resume.pdf
+```
+
+### 2. Run Backend Unit Tests
+Execute the Python test suite (10 unit tests):
+```bash
+python -m unittest lambda_src/test_handler.py
+```
+
+### 3. Run Web Dashboard Locally
+```bash
+cd web
+npm run dev
+```
+
+---
+
+## AWS Infrastructure Deployment
 
 ### Prerequisites
-- AWS Account with Bedrock Access enabled
-- Terraform installed
-- GitHub Personal Access Token (PAT)
+- AWS CLI configured with administrator permissions
+- Terraform >= 1.5.0
+- GitHub Personal Access Token (PAT) with `repo` scope
 
-### Deploy Infrastructure
+### Terraform Deployment Steps
 
-1. Clone the repository:
+1. Navigate to the terraform directory:
    ```bash
-   git clone https://github.com/Vishhh03/Latex-Resume.git
-   cd Latex-Resume/terraform
+   cd terraform
    ```
 
 2. Create `terraform.tfvars`:
    ```hcl
-   github_token       = "ghp_..."
-   repo_owner         = "your-username"
-   repo_name          = "your-repo"
-   budget_alert_email = "you@example.com"
+   github_token       = "ghp_YOUR_GITHUB_PAT"
+   repo_owner         = "Vishhh03"
+   repo_name          = "Latex-Resume"
+   aws_region         = "us-east-1"
+   budget_alert_email = "your-email@example.com"
    ```
 
-3. Deploy:
+3. Initialize and apply:
    ```bash
    terraform init
    terraform apply
    ```
 
-4. Run CLI:
-   ```bash
-   npx latex-resume-cli
-   ```
+### CI/CD & Security
+- **Keyless Authentication**: GitHub Actions deploys code updates using AWS IAM OpenID Connect (OIDC) federation (`sts:AssumeRoleWithWebIdentity`). Static AWS keys are not required in repository secrets.
+- **Cost Controls**: Hard-capped AWS monthly budget alert ($5.00 limit) configured via Amazon SNS notifications.
 
 ---
 
-Built by [Vishal Shaji](https://github.com/Vishhh03)
+## License
+
+MIT License. Developed by [Vishal Shaji](https://github.com/Vishhh03).

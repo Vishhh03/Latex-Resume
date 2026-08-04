@@ -1,26 +1,35 @@
 # typst-resume-cli
 
-Interactive terminal for the Serverless Typst AI Resume Editor.
+Interactive CLI for the Serverless Typst AI Resume Editor.
 
 ```bash
 npx typst-resume-cli
 ```
-*(Also available via `npx latex-resume-cli`)*
 
-## What it does
+*(Backwards compatible alias: `npx latex-resume-cli`)*
 
-An interactive CLI interface that lets you:
-- ⚡ **Launch the Serverless Typst Resume Editor** (< 1s cold start)
-- 📖 **Inspect the System Architecture** (Serverless Typst + Bedrock Converse API)
-- 📂 **Explore the GitHub Repository**
+---
 
-## Architecture
+## Technical Overview
 
-This CLI interfaces with a fast AWS Lambda backend running:
-- **Typst Engine**: Sub-20ms PDF compilation
-- **Amazon Bedrock Converse API**: Structured JSON resume editing with JSON Schema guarantees
-- **S3 & GitHub API**: Draft persistence and instant auto-commits
+`typst-resume-cli` provides an interactive terminal interface to launch the serverless resume editor, inspect system architecture specs, and manage remote resume data.
+
+### Features
+- Direct connection to live AWS Lambda Function URL (< 1s cold start)
+- Sub-second resume rendering and preview
+- Architecture and schema inspection commands
+
+---
+
+## Architecture Specification
+
+The CLI interfaces with an AWS Lambda serverless execution layer running:
+- **Typst Compiler Engine**: Sub-20ms PDF generation
+- **Amazon Bedrock Converse API**: JSON Schema-enforced AI modifications
+- **GitHub REST API**: Direct commit integration to main branch
+
+---
 
 ## License
 
-MIT
+MIT License
