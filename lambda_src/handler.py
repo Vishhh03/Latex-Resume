@@ -50,45 +50,59 @@ def get_current_resume():
         except Exception:
             pass
 
-    pkg_json = os.path.join(os.path.dirname(__file__), "resume.json")
-    if os.path.exists(pkg_json):
-        with open(pkg_json, "r") as f:
-            return json.load(f)
+    if BUCKET_NAME:
+        try:
+            res = s3.get_object(Bucket=BUCKET_NAME, Key="resume.json")
+            data = json.loads(res["Body"].read().decode("utf-8"))
+            if data:
+                return data
+        except Exception:
+            pass
 
     if os.path.exists("./resume.json"):
         with open("./resume.json", "r") as f:
             return json.load(f)
+
+    pkg_json = os.path.join(os.path.dirname(__file__), "resume.json")
+    if os.path.exists(pkg_json):
+        with open(pkg_json, "r") as f:
+            return json.load(f)
     return {}
 
 def compile_typst(resume_data):
-    work_dir = "/tmp" if os.path.exists("/tmp") else "."
-    json_path = os.path.join(work_dir, "resume.json")
-    pdf_out = os.path.join(work_dir, "resume.pdf")
+    import tempfile
+    import shutil
 
-    # Write JSON data
-    with open(json_path, "w") as f:
-        json.dump(resume_data, f, indent=2)
+    with tempfile.TemporaryDirectory() as work_dir:
+        json_path = os.path.join(work_dir, "resume.json")
+        pdf_out = os.path.join(work_dir, "resume.pdf")
 
-    template_path = os.path.join(os.path.dirname(__file__), "template.typ")
-    if not os.path.exists(template_path):
-        template_path = "./template.typ"
+        # Write JSON data
+        with open(json_path, "w", encoding="utf-8") as f:
+            json.dump(resume_data, f, indent=2)
 
-    # Find typst executable safely per platform
-    typst_bin = "typst"
-    if sys.platform == "win32" and os.path.exists("./typst.exe"):
-        typst_bin = "./typst.exe"
-    elif sys.platform != "win32" and os.path.exists("./typst"):
-        typst_bin = "./typst"
+        template_src = os.path.join(os.path.dirname(__file__), "template.typ")
+        if not os.path.exists(template_src):
+            template_src = "./template.typ"
 
-    root_dir = os.path.abspath(os.path.dirname(template_path))
-    cmd = [typst_bin, "compile", "--root", root_dir, template_path, pdf_out]
-    
-    proc = subprocess.run(cmd, capture_output=True, text=True)
-    if proc.returncode != 0:
-        raise Exception(f"Typst Compilation Error: {proc.stderr}")
+        template_dst = os.path.join(work_dir, "template.typ")
+        shutil.copyfile(template_src, template_dst)
 
-    with open(pdf_out, "rb") as f:
-        return f.read()
+        # Find typst executable safely per platform
+        typst_bin = "typst"
+        if sys.platform == "win32" and os.path.exists("./typst.exe"):
+            typst_bin = "./typst.exe"
+        elif sys.platform != "win32" and os.path.exists("./typst"):
+            typst_bin = "./typst"
+
+        cmd = [typst_bin, "compile", "--root", work_dir, template_dst, pdf_out]
+
+        proc = subprocess.run(cmd, capture_output=True, text=True)
+        if proc.returncode != 0:
+            raise Exception(f"Typst Compilation Error: {proc.stderr}")
+
+        with open(pdf_out, "rb") as f:
+            return f.read()
 
 def handler(event, context):
     http_method = event.get("requestContext", {}).get("http", {}).get("method", "GET")
@@ -182,8 +196,21 @@ def handler(event, context):
                 updated_resume = json.loads(response_text)
 
             # Save to /tmp
-            with open("/tmp/resume.json" if os.path.exists("/tmp") else "resume.json", "w") as f:
+            tmp_path = "/tmp/resume.json" if os.path.exists("/tmp") else "resume.json"
+            with open(tmp_path, "w") as f:
                 json.dump(updated_resume, f, indent=2)
+
+            # Persist update to S3
+            if BUCKET_NAME:
+                try:
+                    s3.put_object(
+                        Bucket=BUCKET_NAME,
+                        Key="resume.json",
+                        Body=json.dumps(updated_resume, indent=2).encode("utf-8"),
+                        ContentType="application/json"
+                    )
+                except Exception as s3_err:
+                    print(f"Warning: Failed to persist updated resume to S3: {s3_err}")
 
             pdf_bytes = compile_typst(updated_resume)
 

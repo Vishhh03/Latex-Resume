@@ -2,7 +2,7 @@ data "archive_file" "lambda_zip" {
   type        = "zip"
   source_dir  = "${path.module}/../lambda_src"
   output_path = "${path.module}/handler.zip"
-  excludes    = ["*.zip", "__pycache__", "bin"]
+  excludes    = ["*.zip", "__pycache__", "bin", "resume.json"]
 }
 
 resource "aws_lambda_function" "resume_api" {
