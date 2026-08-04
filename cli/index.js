@@ -37,16 +37,85 @@ ${c.white}    Serverless Typst & Bedrock Resume Editor${c.reset}
 ${c.dim}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${c.reset}
 `;
 
+const http = require('http');
+const fs = require('fs');
+const path = require('path');
+
 function openUrl(url) {
     const start = process.platform === 'darwin' ? 'open' :
         process.platform === 'win32' ? 'start' : 'xdg-open';
     require('child_process').exec(`${start} ${url}`);
 }
 
+function startLocalServer() {
+    return new Promise((resolve) => {
+        const server = http.createServer((req, res) => {
+            const parsedUrl = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
+            const pathname = parsedUrl.pathname;
+
+            if (pathname === '/' || pathname === '/index.html') {
+                const htmlPath = path.join(__dirname, 'editor.html');
+                fs.readFile(htmlPath, 'utf8', (err, data) => {
+                    if (err) {
+                        res.writeHead(500, { 'Content-Type': 'text/plain' });
+                        return res.end('Error loading editor.html');
+                    }
+                    res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+                    res.end(data);
+                });
+                return;
+            }
+
+            if (pathname.startsWith('/api/')) {
+                const targetPath = pathname.replace('/api', '');
+                const targetUrl = new URL(targetPath + parsedUrl.search, CONFIG.apiUrl);
+
+                let bodyData = [];
+                req.on('data', chunk => bodyData.push(chunk));
+                req.on('end', () => {
+                    const payload = Buffer.concat(bodyData);
+                    const options = {
+                        method: req.method,
+                        headers: {
+                            ...req.headers,
+                            host: targetUrl.hostname,
+                            'content-length': payload.length
+                        }
+                    };
+
+                    const proxyReq = https.request(targetUrl, options, (proxyRes) => {
+                        res.writeHead(proxyRes.statusCode, proxyRes.headers);
+                        proxyRes.pipe(res);
+                    });
+
+                    proxyReq.on('error', (err) => {
+                        res.writeHead(502, { 'Content-Type': 'application/json' });
+                        res.end(JSON.stringify({ error: 'Proxy request error: ' + err.message }));
+                    });
+
+                    proxyReq.write(payload);
+                    proxyReq.end();
+                });
+                return;
+            }
+
+            res.writeHead(404, { 'Content-Type': 'text/plain' });
+            res.end('Not Found');
+        });
+
+        server.listen(0, '127.0.0.1', () => {
+            const port = server.address().port;
+            const localUrl = `http://localhost:${port}`;
+            console.log(`\n${c.green}⚡ Local HTMX Editor active at ${localUrl}${c.reset}`);
+            console.log(`${c.dim}Opening embedded interface in your browser...${c.reset}\n`);
+            openUrl(localUrl);
+            resolve(server);
+        });
+    });
+}
+
 async function startSession() {
-    console.log(`\n${c.green}⚡ Serverless Typst Backend Active (< 1s cold start)${c.reset}`);
-    console.log(`${c.dim}Opening editor interface (${CONFIG.webUrl})...${c.reset}\n`);
-    openUrl(CONFIG.webUrl);
+    await startLocalServer();
 }
 
 function showHowItWorks() {
