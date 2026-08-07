@@ -74,26 +74,38 @@ function startLocalServer() {
                 req.on('data', chunk => bodyData.push(chunk));
                 req.on('end', () => {
                     const payload = Buffer.concat(bodyData);
+                    const headers = {
+                        'accept': req.headers['accept'] || '*/*',
+                        'content-type': req.headers['content-type'] || 'application/json',
+                        'host': targetUrl.hostname
+                    };
+                    if (payload.length > 0) {
+                        headers['content-length'] = payload.length;
+                    }
+
+                    const client = targetUrl.protocol === 'https:' ? https : http;
                     const options = {
+                        hostname: targetUrl.hostname,
+                        port: targetUrl.port || (targetUrl.protocol === 'https:' ? 443 : 80),
+                        path: targetUrl.pathname + targetUrl.search,
                         method: req.method,
-                        headers: {
-                            ...req.headers,
-                            host: targetUrl.hostname,
-                            'content-length': payload.length
-                        }
+                        headers: headers
                     };
 
-                    const proxyReq = https.request(targetUrl, options, (proxyRes) => {
+                    const proxyReq = client.request(options, (proxyRes) => {
                         res.writeHead(proxyRes.statusCode, proxyRes.headers);
                         proxyRes.pipe(res);
                     });
 
                     proxyReq.on('error', (err) => {
+                        console.error('Proxy error:', err);
                         res.writeHead(502, { 'Content-Type': 'application/json' });
                         res.end(JSON.stringify({ error: 'Proxy request error: ' + err.message }));
                     });
 
-                    proxyReq.write(payload);
+                    if (payload.length > 0) {
+                        proxyReq.write(payload);
+                    }
                     proxyReq.end();
                 });
                 return;

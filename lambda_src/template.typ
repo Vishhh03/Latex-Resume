@@ -23,10 +23,24 @@
   #text(size: 9pt, fill: dark-gray)[
     #data.basics.location #h(4pt) | #h(4pt)
     #data.basics.phone #h(4pt) | #h(4pt)
-    #link("mailto:" + data.basics.email)[#data.basics.email] #h(4pt) | #h(4pt)
-    #link(data.basics.website)[Website] #h(4pt) | #h(4pt)
-    #link("https://github.com/" + data.basics.github)[GitHub] #h(4pt) | #h(4pt)
-    #link("https://linkedin.com/in/" + data.basics.linkedin)[LinkedIn]
+    #link("mailto:" + data.basics.email)[#data.basics.email]
+    #if "website" in data.basics and data.basics.website != "" [ #h(4pt) | #h(4pt) #link(data.basics.website)[Website] ]
+    #if "github" in data.basics and data.basics.github != "" [
+      #h(4pt) | #h(4pt)
+      #let gh = data.basics.github
+      #let gh-url = if gh.starts-with("http") { gh } else { "https://github.com/" + gh }
+      #link(gh-url)[GitHub]
+    ]
+    #if "linkedin" in data.basics and data.basics.linkedin != "" [
+      #h(4pt) | #h(4pt)
+      #let li = data.basics.linkedin
+      #let li-url = if li.starts-with("http") { li } else { "https://linkedin.com/in/" + li }
+      #link(li-url)[LinkedIn]
+    ]
+  ]
+  #if "summary" in data.basics and data.basics.summary != "" [
+    #v(3pt)
+    #text(size: 8.5pt, style: "italic", fill: dark-gray)[#data.basics.summary]
   ]
 ]
 

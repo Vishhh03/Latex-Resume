@@ -17,10 +17,11 @@ resource "aws_lambda_function" "resume_api" {
 
   environment {
     variables = {
-      S3_BUCKET_NAME = aws_s3_bucket.resume_bucket.id
-      GITHUB_TOKEN   = var.github_token
-      REPO_OWNER     = var.repo_owner
-      REPO_NAME      = var.repo_name
+      S3_BUCKET_NAME   = aws_s3_bucket.resume_bucket.id
+      GITHUB_TOKEN     = var.github_token
+      REPO_OWNER       = var.repo_owner
+      REPO_NAME        = var.repo_name
+      BEDROCK_MODEL_ID = var.bedrock_model_id
     }
   }
 

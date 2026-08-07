@@ -21,3 +21,7 @@ variable "repo_name" {}
 variable "budget_alert_email" {
   default = ""
 }
+
+variable "bedrock_model_id" {
+  default = "us.amazon.nova-micro-v1:0"
+}

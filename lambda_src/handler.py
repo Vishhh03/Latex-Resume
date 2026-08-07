@@ -39,13 +39,27 @@ def create_response(status_code, body, content_type="application/json"):
         "body": body
     }
 
+DEFAULT_FALLBACK_RESUME = {
+    "basics": {
+        "name": "Candidate Name",
+        "title": "Software Engineer",
+        "email": "candidate@example.com",
+        "location": "City, Country",
+        "summary": "Professional software engineer specializing in scalable systems and cloud infrastructure."
+    },
+    "work": [],
+    "projects": [],
+    "education": [],
+    "skills": []
+}
+
 def get_current_resume():
     tmp_path = "/tmp/resume.json"
     if os.path.exists(tmp_path):
         try:
             with open(tmp_path, "r") as f:
                 data = json.load(f)
-                if data:
+                if isinstance(data, dict) and "basics" in data:
                     return data
         except Exception:
             pass
@@ -54,20 +68,70 @@ def get_current_resume():
         try:
             res = s3.get_object(Bucket=BUCKET_NAME, Key="resume.json")
             data = json.loads(res["Body"].read().decode("utf-8"))
-            if data:
+            if isinstance(data, dict) and "basics" in data:
                 return data
         except Exception:
             pass
 
     if os.path.exists("./resume.json"):
-        with open("./resume.json", "r") as f:
-            return json.load(f)
+        try:
+            with open("./resume.json", "r") as f:
+                data = json.load(f)
+                if isinstance(data, dict) and "basics" in data:
+                    return data
+        except Exception:
+            pass
 
     pkg_json = os.path.join(os.path.dirname(__file__), "resume.json")
     if os.path.exists(pkg_json):
-        with open(pkg_json, "r") as f:
-            return json.load(f)
-    return {}
+        try:
+            with open(pkg_json, "r") as f:
+                data = json.load(f)
+                if isinstance(data, dict) and "basics" in data:
+                    return data
+        except Exception:
+            pass
+
+    return DEFAULT_FALLBACK_RESUME
+
+def ensure_typst_binary():
+    if sys.platform == "win32":
+        if os.path.exists("./typst.exe"):
+            return "./typst.exe"
+        return "typst"
+
+    # Check local or packaged typst
+    candidates = [
+        "./typst",
+        os.path.join(os.path.dirname(__file__), "typst"),
+        "/tmp/typst"
+    ]
+    for c in candidates:
+        if os.path.exists(c):
+            return c
+
+    tmp_typst = "/tmp/typst"
+    # Auto-fetch static Linux typst binary on Lambda cold start
+    try:
+        url = "https://github.com/typst/typst/releases/download/v0.11.0/typst-x86_64-unknown-linux-musl.tar.xz"
+        tar_path = "/tmp/typst.tar.xz"
+        import urllib.request
+        import tarfile
+
+        urllib.request.urlretrieve(url, tar_path)
+        with tarfile.open(tar_path, "r:xz") as tar:
+            for member in tar.getmembers():
+                if member.name.endswith("/typst") or member.name == "typst":
+                    f = tar.extractfile(member)
+                    if f:
+                        with open(tmp_typst, "wb") as out:
+                            out.write(f.read())
+                        os.chmod(tmp_typst, 0o755)
+                        return tmp_typst
+    except Exception as e:
+        print(f"Warning: Failed to auto-download typst binary: {e}")
+
+    return "typst"
 
 def compile_typst(resume_data):
     import tempfile
@@ -88,13 +152,7 @@ def compile_typst(resume_data):
         template_dst = os.path.join(work_dir, "template.typ")
         shutil.copyfile(template_src, template_dst)
 
-        # Find typst executable safely per platform
-        typst_bin = "typst"
-        if sys.platform == "win32" and os.path.exists("./typst.exe"):
-            typst_bin = "./typst.exe"
-        elif sys.platform != "win32" and os.path.exists("./typst"):
-            typst_bin = "./typst"
-
+        typst_bin = ensure_typst_binary()
         cmd = [typst_bin, "compile", "--root", work_dir, template_dst, pdf_out]
 
         proc = subprocess.run(cmd, capture_output=True, text=True)
@@ -117,13 +175,26 @@ def handler(event, context):
             raw_body = event["body"]
             if event.get("isBase64Encoded"):
                 raw_body = base64.b64decode(raw_body).decode("utf-8")
-            body = json.loads(raw_body)
+            try:
+                body = json.loads(raw_body)
+            except Exception:
+                import urllib.parse
+                parsed = urllib.parse.parse_qs(raw_body)
+                body = {k: v[0] if len(v) == 1 else v for k, v in parsed.items()}
         except Exception:
             body = {}
 
     try:
+        # GET /health
+        if path == "/health" and http_method == "GET":
+            return create_response(200, {"status": "ok", "engine": "typst"})
+
+        # GET /versions
+        elif path == "/versions" and http_method == "GET":
+            return create_response(200, {"versions": ["default"]})
+
         # GET /resume
-        if path == "/resume" and http_method == "GET":
+        elif path == "/resume" and http_method == "GET":
             data = get_current_resume()
             return create_response(200, data)
 
@@ -143,7 +214,17 @@ def handler(event, context):
 
         # POST /preview
         elif path == "/preview" and http_method == "POST":
-            resume_data = body.get("resume", get_current_resume())
+            resume_data = None
+            if isinstance(body, dict):
+                if "resume" in body and isinstance(body["resume"], dict):
+                    resume_data = body["resume"]
+                elif "json" in body and isinstance(body["json"], dict):
+                    resume_data = body["json"]
+                elif "basics" in body:
+                    resume_data = body
+            if not resume_data:
+                resume_data = get_current_resume()
+
             pdf_bytes = compile_typst(resume_data)
             return {
                 "statusCode": 200,
@@ -154,6 +235,62 @@ def handler(event, context):
                 "body": base64.b64encode(pdf_bytes).decode("utf-8"),
                 "isBase64Encoded": True
             }
+
+        # POST /save
+        elif path == "/save" and http_method == "POST":
+            save_data = None
+            if isinstance(body, dict):
+                if "resume" in body and isinstance(body["resume"], dict):
+                    save_data = body["resume"]
+                elif "json" in body and isinstance(body["json"], dict):
+                    save_data = body["json"]
+                elif "basics" in body:
+                    save_data = body
+
+            if not save_data:
+                return create_response(400, {"error": "Invalid resume data provided"})
+
+            tmp_path = "/tmp/resume.json" if os.path.exists("/tmp") else "resume.json"
+            with open(tmp_path, "w") as f:
+                json.dump(save_data, f, indent=2)
+
+            if BUCKET_NAME:
+                try:
+                    s3.put_object(
+                        Bucket=BUCKET_NAME,
+                        Key="resume.json",
+                        Body=json.dumps(save_data, indent=2).encode("utf-8"),
+                        ContentType="application/json"
+                    )
+                except Exception as s3_err:
+                    print(f"Warning: Failed to persist save to S3: {s3_err}")
+
+            return create_response(200, {"status": "success", "message": "Resume data saved"})
+
+        # GET /history
+        elif path == "/history" and http_method == "GET":
+            if not GITHUB_TOKEN or not REPO_OWNER or not REPO_NAME:
+                return create_response(200, [])
+
+            url = f"https://api.github.com/repos/{REPO_OWNER}/{REPO_NAME}/commits?path=resume.json&per_page=10"
+            req = urllib.request.Request(url, headers={
+                "Authorization": f"token {GITHUB_TOKEN}",
+                "User-Agent": "Resume-Editor-Lambda"
+            })
+            try:
+                with urllib.request.urlopen(req) as r:
+                    commits_data = json.loads(r.read().decode("utf-8"))
+                    formatted = []
+                    for c in commits_data:
+                        formatted.append({
+                            "sha": c.get("sha", ""),
+                            "message": c.get("commit", {}).get("message", ""),
+                            "author": c.get("commit", {}).get("author", {}).get("name", ""),
+                            "date": c.get("commit", {}).get("author", {}).get("date", "")
+                        })
+                    return create_response(200, formatted)
+            except Exception:
+                return create_response(200, [])
 
         # POST /update (AI Editing via Bedrock Converse API)
         elif path == "/update" and http_method == "POST":

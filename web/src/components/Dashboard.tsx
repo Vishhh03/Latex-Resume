@@ -27,7 +27,7 @@ export default function Dashboard({ apiUrl }: DashboardProps) {
     const [showNewVersionModal, setShowNewVersionModal] = useState(false);
     const [newVersionName, setNewVersionName] = useState('');
 
-    const [latex, setLatex] = useState('');
+    const [jsonText, setJsonText] = useState('');
     const [pdfUrl, setPdfUrl] = useState<string | null>(null);
 
     // Toast Notifications
@@ -37,10 +37,6 @@ export default function Dashboard({ apiUrl }: DashboardProps) {
         setToasts(prev => [...prev, { id, message, type }]);
         setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 4000);
     };
-
-    // Stop Confirmation Modal
-    const [isStopModalOpen, setIsStopModalOpen] = useState(false);
-    const [isStopping, setIsStopping] = useState(false);
 
     const fetchVersions = useCallback(async () => {
         try {
@@ -58,7 +54,7 @@ export default function Dashboard({ apiUrl }: DashboardProps) {
         fetchVersions();
     }, [fetchVersions]);
 
-    // Auto-fetch PDF and LaTeX on mount and version change
+    // Auto-fetch PDF and JSON on mount and version change
     useEffect(() => {
         const queryParam = version === 'default' ? '' : `?version=${version}`;
         const pdfEndpoint = `${apiUrl}/pdf${queryParam}`;
@@ -71,7 +67,14 @@ export default function Dashboard({ apiUrl }: DashboardProps) {
             if (res.ok) return res.text();
             return null;
         }).then(text => {
-            if (text) setLatex(text);
+            if (text) {
+                try {
+                    const parsed = JSON.parse(text);
+                    setJsonText(JSON.stringify(parsed, null, 2));
+                } catch {
+                    setJsonText(text);
+                }
+            }
         }).catch(console.error);
     }, [apiUrl, version]);
     const [history, setHistory] = useState<string[]>([]);
@@ -83,7 +86,7 @@ export default function Dashboard({ apiUrl }: DashboardProps) {
     const [isCommitting, setIsCommitting] = useState(false);
     const [isConnected, setIsConnected] = useState(true);
 
-    // Health check - detect backend crashes
+    // Health check - detect backend connectivity
     useEffect(() => {
         const checkHealth = async () => {
             try {
@@ -94,46 +97,44 @@ export default function Dashboard({ apiUrl }: DashboardProps) {
             }
         };
 
-        checkHealth(); // Initial check
-        const interval = setInterval(checkHealth, 10000); // Every 10s
+        checkHealth();
+        const interval = setInterval(checkHealth, 10000);
         return () => clearInterval(interval);
     }, [apiUrl]);
 
     // -- Undo/Redo Logic --
-    const pushState = useCallback((newLatex: string) => {
-        setHistory(prev => [...prev, latex]);
+    const pushState = useCallback((newContent: string) => {
+        setHistory(prev => [...prev, jsonText]);
         setFuture([]);
-        setLatex(newLatex);
-    }, [latex]);
+        setJsonText(newContent);
+    }, [jsonText]);
 
     const handleUndo = () => {
         if (history.length === 0) return;
         const previous = history[history.length - 1];
-        setFuture(prev => [latex, ...prev]);
+        setFuture(prev => [jsonText, ...prev]);
         setHistory(prev => prev.slice(0, -1));
-        setLatex(previous);
+        setJsonText(previous);
     };
 
     const handleRedo = () => {
         if (future.length === 0) return;
         const next = future[0];
-        setHistory(prev => [...prev, latex]);
+        setHistory(prev => [...prev, jsonText]);
         setFuture(prev => prev.slice(1));
-        setLatex(next);
+        setJsonText(next);
     };
 
     // -- Handlers --
 
-    const handleAiSuccess = (newLatex: string, newPdfUrl: string) => {
-        pushState(newLatex);
+    const handleAiSuccess = (newData: any, newPdfUrl: string) => {
+        const formatted = typeof newData === 'string' ? newData : JSON.stringify(newData, null, 2);
+        pushState(formatted);
         if (newPdfUrl) setPdfUrl(newPdfUrl);
     };
 
     const handleManualChange = (val: string) => {
-        // Debounced history push could go here, 
-        // but for now we rely on explicit checkpoints or AI updates for "Undo" points
-        // to avoid an undo step for every keystroke.
-        setLatex(val);
+        setJsonText(val);
     };
 
     const handleCommit = async () => {
@@ -148,21 +149,6 @@ export default function Dashboard({ apiUrl }: DashboardProps) {
             showToast('Push failed: ' + e, 'error');
         } finally {
             setIsCommitting(false);
-        }
-    };
-
-    const handleStop = async () => {
-        setIsStopping(true);
-        try {
-            const res = await fetch('/stop', { method: 'POST' });
-            const data = await res.json();
-            showToast(data.message || 'Container stopping...', 'info');
-            setIsStopModalOpen(false);
-        } catch {
-            showToast('Stop request sent', 'info');
-            setIsStopModalOpen(false);
-        } finally {
-            setIsStopping(false);
         }
     };
 
@@ -184,43 +170,13 @@ export default function Dashboard({ apiUrl }: DashboardProps) {
                 ))}
             </div>
 
-            {/* Stop Confirmation Modal */}
-            {isStopModalOpen && (
-                <div className="fixed inset-0 z-[90] bg-black/60 backdrop-blur-sm flex items-center justify-center animate-in fade-in duration-200">
-                    <div className="bg-zinc-900 border border-zinc-700 rounded-xl p-6 max-w-sm w-full mx-4 shadow-2xl animate-in zoom-in-95 duration-200">
-                        <div className="text-center mb-4">
-                            <div className="text-4xl mb-3">⚠️</div>
-                            <h3 className="text-xl font-bold text-white mb-2">Stop Container?</h3>
-                            <p className="text-zinc-400 text-sm">
-                                This will shut down the ECS backend. You&apos;ll need to run <code className="bg-zinc-800 px-1.5 py-0.5 rounded text-xs">npx latex-resume-cli</code> to restart.
-                            </p>
-                        </div>
-                        <div className="flex gap-3 justify-center">
-                            <button
-                                onClick={() => setIsStopModalOpen(false)}
-                                className="px-4 py-2 bg-zinc-800 text-white rounded-lg hover:bg-zinc-700 transition-colors text-sm"
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                onClick={handleStop}
-                                disabled={isStopping}
-                                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-500 transition-colors text-sm disabled:opacity-50"
-                            >
-                                {isStopping ? 'Stopping...' : 'Yes, Stop'}
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
-
             {/* Disconnected Overlay */}
             {!isConnected && (
                 <div className="absolute inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center rounded-xl">
                     <div className="text-center p-8">
                         <div className="text-6xl mb-4">⚡</div>
                         <h2 className="text-2xl font-bold text-white mb-2">Backend Disconnected</h2>
-                        <p className="text-zinc-400 mb-6">The container has stopped or crashed.</p>
+                        <p className="text-zinc-400 mb-6">Cannot connect to the serverless resume backend API.</p>
                         <div className="flex gap-4 justify-center">
                             <button
                                 onClick={() => window.location.reload()}
@@ -236,7 +192,6 @@ export default function Dashboard({ apiUrl }: DashboardProps) {
                                 View on GitHub
                             </a>
                         </div>
-                        <p className="text-zinc-500 text-sm mt-6">Run <code className="bg-zinc-800 px-2 py-1 rounded">npx latex-resume-cli</code> to restart</p>
                     </div>
                 </div>
             )}
@@ -290,7 +245,7 @@ export default function Dashboard({ apiUrl }: DashboardProps) {
             {/* LEFT PANE: Input (Tabs) */}
             <div className="w-1/2 flex flex-col gap-4">
 
-                {/* Top Bar: Tabs + Undo/Redo/Commit/Stop */}
+                {/* Top Bar: Tabs + Undo/Redo/Commit */}
                 <div className="flex justify-between items-center bg-zinc-900 p-2 rounded-lg border border-zinc-800">
                     <div className="flex gap-1 items-center">
                         <button
@@ -346,13 +301,6 @@ export default function Dashboard({ apiUrl }: DashboardProps) {
                         >
                             Tutorial
                         </Link>
-                        <button
-                            onClick={() => setIsStopModalOpen(true)}
-                            className="px-3 py-1 bg-red-600 text-white text-xs rounded hover:bg-red-500 transition-colors"
-                            title="Stop ECS Container"
-                        >
-                            Stop
-                        </button>
                     </div>
                 </div>
 
@@ -383,7 +331,7 @@ export default function Dashboard({ apiUrl }: DashboardProps) {
                             <div className="mb-6">
                                 <h2 className="text-2xl font-bold text-white mb-2">AI Architect</h2>
                                 <p className="text-zinc-400 text-sm">
-                                    Describe changes or paste a Job Description. The AI will rewrite your LaTeX resume.
+                                    Describe changes or paste a Job Description. Amazon Bedrock will update your Typst & JSON resume.
                                 </p>
                             </div>
                             <ResumeForm onSuccess={handleAiSuccess} apiUrl={apiUrl} version={version} />
@@ -391,8 +339,8 @@ export default function Dashboard({ apiUrl }: DashboardProps) {
                     ) : (
                         <div className="h-full animate-in fade-in slide-in-from-right-4 duration-300">
                             <ResumeEditor
-                                latex={latex}
-                                setLatex={handleManualChange}
+                                jsonText={jsonText}
+                                setJsonText={handleManualChange}
                                 onPreviewUpdate={setPdfUrl}
                                 apiUrl={apiUrl}
                                 version={version}

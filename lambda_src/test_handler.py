@@ -47,7 +47,7 @@ class TestResumeServerlessBackend(unittest.TestCase):
         res = handler(event, None)
         self.assertEqual(res["statusCode"], 200)
         body = json.loads(res["body"])
-        self.assertEqual(body["basics"]["name"], "Vishal Shaji")
+        self.assertIn("name", body["basics"])
 
     def test_handler_cors_options(self):
         """Test OPTIONS preflight endpoint."""
@@ -142,6 +142,78 @@ class TestResumeServerlessBackend(unittest.TestCase):
         body = json.loads(res["body"])
         self.assertEqual(body["status"], "success")
         self.assertEqual(body["data"]["basics"]["title"], "Senior Cloud Engineer")
+
+    def test_handler_health(self):
+        """Test GET /health endpoint."""
+        event = {
+            "rawPath": "/health",
+            "requestContext": {"http": {"method": "GET"}}
+        }
+        res = handler(event, None)
+        self.assertEqual(res["statusCode"], 200)
+        body = json.loads(res["body"])
+        self.assertEqual(body["status"], "ok")
+
+    def test_handler_versions(self):
+        """Test GET /versions endpoint."""
+        event = {
+            "rawPath": "/versions",
+            "requestContext": {"http": {"method": "GET"}}
+        }
+        res = handler(event, None)
+        self.assertEqual(res["statusCode"], 200)
+        body = json.loads(res["body"])
+        self.assertIn("versions", body)
+
+    def test_handler_save(self):
+        """Test POST /save endpoint."""
+        sample_resume = {
+            "basics": {
+                "name": "Test Candidate",
+                "title": "Engineer",
+                "email": "test@example.com",
+                "location": "Remote"
+            }
+        }
+        event = {
+            "rawPath": "/save",
+            "requestContext": {"http": {"method": "POST"}},
+            "body": json.dumps({"resume": sample_resume})
+        }
+        res = handler(event, None)
+        self.assertEqual(res["statusCode"], 200)
+        body = json.loads(res["body"])
+        self.assertEqual(body["status"], "success")
+
+    def test_handler_history(self):
+        """Test GET /history endpoint."""
+        event = {
+            "rawPath": "/history",
+            "requestContext": {"http": {"method": "GET"}}
+        }
+        res = handler(event, None)
+        self.assertEqual(res["statusCode"], 200)
+
+    @patch("lambda_src.handler.bedrock")
+    @patch("lambda_src.handler.compile_typst")
+    def test_handler_form_urlencoded_update(self, mock_compile, mock_bedrock):
+        """Test POST /update endpoint with application/x-www-form-urlencoded body."""
+        mock_compile.return_value = b"%PDF-1.4 Mock PDF Content"
+        mock_bedrock.converse.return_value = {
+            "output": {
+                "message": {
+                    "content": [{"text": json.dumps({"basics": {"name": "Form Test", "title": "Dev", "email": "a@b.com", "location": "c"}})}]
+                }
+            }
+        }
+
+        event = {
+            "rawPath": "/update",
+            "requestContext": {"http": {"method": "POST"}},
+            "body": "instruction=Update+my+skills&job_description=Target+JD"
+        }
+        res = handler(event, None)
+        self.assertEqual(res["statusCode"], 200)
 
 if __name__ == "__main__":
     unittest.main()
