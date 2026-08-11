@@ -61,44 +61,93 @@ DEFAULT_FALLBACK_RESUME = {
     "skills": []
 }
 
-def get_current_resume():
-    tmp_path = "/tmp/resume.json"
-    if os.path.exists(tmp_path):
-        try:
-            with open(tmp_path, "r") as f:
-                data = json.load(f)
-                if isinstance(data, dict) and "basics" in data:
-                    return data
-        except Exception:
-            pass
+def get_version_key(version="default"):
+    if not version or version in ("default", "master", "main"):
+        return "default", "resume.json", "resumes/resume.json"
+    clean_v = "".join(c for c in version if c.isalnum() or c in ("_", "-")).lower()
+    if not clean_v:
+        return "default", "resume.json", "resumes/resume.json"
+    return clean_v, f"resume_{clean_v}.json", f"resumes/resume_{clean_v}.json"
 
+def get_available_versions():
+    versions = set(["default"])
+    search_dirs = ["./resumes", ".", os.path.dirname(__file__), os.path.join(os.path.dirname(__file__), "resumes")]
+    for d in search_dirs:
+        if os.path.exists(d):
+            try:
+                for fname in os.listdir(d):
+                    if fname == "resume.json":
+                        versions.add("default")
+                    elif fname.startswith("resume_") and fname.endswith(".json"):
+                        v = fname[7:-5]
+                        if v:
+                            versions.add(v)
+            except Exception:
+                pass
+    
     if BUCKET_NAME:
         try:
-            res = s3.get_object(Bucket=BUCKET_NAME, Key="resume.json")
-            data = json.loads(res["Body"].read().decode("utf-8"))
-            if isinstance(data, dict) and "basics" in data:
-                return data
+            res = s3.list_objects_v2(Bucket=BUCKET_NAME)
+            for obj in res.get("Contents", []):
+                k = obj.get("Key", "")
+                fname = os.path.basename(k)
+                if fname == "resume.json":
+                    versions.add("default")
+                elif fname.startswith("resume_") and fname.endswith(".json"):
+                    v = fname[7:-5]
+                    if v:
+                        versions.add(v)
         except Exception:
             pass
 
-    if os.path.exists("./resume.json"):
-        try:
-            with open("./resume.json", "r") as f:
-                data = json.load(f)
-                if isinstance(data, dict) and "basics" in data:
-                    return data
-        except Exception:
-            pass
+    return sorted(list(versions))
 
-    pkg_json = os.path.join(os.path.dirname(__file__), "resume.json")
-    if os.path.exists(pkg_json):
-        try:
-            with open(pkg_json, "r") as f:
-                data = json.load(f)
+def get_current_resume(version="default"):
+    v_name, filename, s3_key = get_version_key(version)
+
+    # 1. Try /tmp
+    tmp_paths = [f"/tmp/resumes/{filename}", f"/tmp/{filename}"]
+    for tmp_path in tmp_paths:
+        if os.path.exists(tmp_path):
+            try:
+                with open(tmp_path, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+                    if isinstance(data, dict) and "basics" in data:
+                        return data
+            except Exception:
+                pass
+
+    # 2. Try S3
+    if BUCKET_NAME:
+        s3_keys_to_check = [s3_key, filename]
+        for key in s3_keys_to_check:
+            try:
+                res = s3.get_object(Bucket=BUCKET_NAME, Key=key)
+                data = json.loads(res["Body"].read().decode("utf-8"))
                 if isinstance(data, dict) and "basics" in data:
                     return data
-        except Exception:
-            pass
+            except Exception:
+                pass
+
+    # 3. Try local filesystem
+    local_paths = [
+        f"./resumes/{filename}",
+        f"./{filename}",
+        os.path.join(os.path.dirname(__file__), "resumes", filename),
+        os.path.join(os.path.dirname(__file__), filename)
+    ]
+    for p in local_paths:
+        if os.path.exists(p):
+            try:
+                with open(p, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+                    if isinstance(data, dict) and "basics" in data:
+                        return data
+            except Exception:
+                pass
+
+    if v_name != "default":
+        return get_current_resume("default")
 
     return DEFAULT_FALLBACK_RESUME
 
@@ -119,7 +168,6 @@ def ensure_typst_binary():
     for c in candidates:
         if os.path.exists(c):
             return c
-
 
     tmp_typst = "/tmp/typst"
     # Auto-fetch static Linux typst binary on Lambda cold start
@@ -150,15 +198,31 @@ def compile_typst(resume_data):
 
     with tempfile.TemporaryDirectory() as work_dir:
         json_path = os.path.join(work_dir, "resume.json")
+        resumes_dir = os.path.join(work_dir, "resumes")
+        os.makedirs(resumes_dir, exist_ok=True)
+        resumes_json_path = os.path.join(resumes_dir, "resume.json")
         pdf_out = os.path.join(work_dir, "resume.pdf")
 
-        # Write JSON data
+        # Write JSON data to both paths for Typst resolution compatibility
         with open(json_path, "w", encoding="utf-8") as f:
             json.dump(resume_data, f, indent=2)
+        with open(resumes_json_path, "w", encoding="utf-8") as f:
+            json.dump(resume_data, f, indent=2)
 
-        template_src = os.path.join(os.path.dirname(__file__), "template.typ")
-        if not os.path.exists(template_src):
-            template_src = "./template.typ"
+        template_candidates = [
+            "./templates/template.typ",
+            os.path.join(os.path.dirname(__file__), "templates", "template.typ"),
+            os.path.join(os.path.dirname(__file__), "template.typ"),
+            "./template.typ"
+        ]
+        template_src = None
+        for cand in template_candidates:
+            if os.path.exists(cand):
+                template_src = cand
+                break
+
+        if not template_src:
+            raise Exception("template.typ not found in templates/ or root")
 
         template_dst = os.path.join(work_dir, "template.typ")
         shutil.copyfile(template_src, template_dst)
@@ -201,6 +265,12 @@ def handler(event, context):
         body = {}
 
 
+    query_params = event.get("queryStringParameters") or {}
+    if not query_params and event.get("rawQueryString"):
+        import urllib.parse
+        query_params = {k: v[0] if len(v) == 1 else v for k, v in urllib.parse.parse_qs(event["rawQueryString"]).items()}
+    version = query_params.get("version") or (body.get("version") if isinstance(body, dict) else "default") or "default"
+
     try:
         # GET /health
         if path == "/health" and http_method == "GET":
@@ -208,16 +278,16 @@ def handler(event, context):
 
         # GET /versions
         elif path == "/versions" and http_method == "GET":
-            return create_response(200, {"versions": ["default"]})
+            return create_response(200, {"versions": get_available_versions()})
 
         # GET /resume
         elif path == "/resume" and http_method == "GET":
-            data = get_current_resume()
+            data = get_current_resume(version)
             return create_response(200, data)
 
         # GET /pdf
         elif path == "/pdf" and http_method == "GET":
-            data = get_current_resume()
+            data = get_current_resume(version)
             pdf_bytes = compile_typst(data)
             return {
                 "statusCode": 200,
@@ -240,7 +310,7 @@ def handler(event, context):
                 elif "basics" in body:
                     resume_data = body
             if not resume_data:
-                resume_data = get_current_resume()
+                resume_data = get_current_resume(version)
 
             pdf_bytes = compile_typst(resume_data)
             return {
@@ -267,29 +337,39 @@ def handler(event, context):
             if not save_data:
                 return create_response(400, {"error": "Invalid resume data provided"})
 
-            tmp_path = "/tmp/resume.json" if os.path.exists("/tmp") else "resume.json"
-            with open(tmp_path, "w") as f:
+            v_name, filename, s3_key = get_version_key(version)
+            tmp_path = f"/tmp/resumes/{filename}" if os.path.exists("/tmp") else f"resumes/{filename}"
+            os.makedirs(os.path.dirname(tmp_path), exist_ok=True)
+            with open(tmp_path, "w", encoding="utf-8") as f:
                 json.dump(save_data, f, indent=2)
+
+            if os.path.exists("./resumes"):
+                try:
+                    with open(f"./resumes/{filename}", "w", encoding="utf-8") as f:
+                        json.dump(save_data, f, indent=2)
+                except Exception:
+                    pass
 
             if BUCKET_NAME:
                 try:
                     s3.put_object(
                         Bucket=BUCKET_NAME,
-                        Key="resume.json",
+                        Key=s3_key,
                         Body=json.dumps(save_data, indent=2).encode("utf-8"),
                         ContentType="application/json"
                     )
                 except Exception as s3_err:
                     print(f"Warning: Failed to persist save to S3: {s3_err}")
 
-            return create_response(200, {"status": "success", "message": "Resume data saved"})
+            return create_response(200, {"status": "success", "message": f"Resume version '{v_name}' saved", "version": v_name})
 
         # GET /history
         elif path == "/history" and http_method == "GET":
             if not GITHUB_TOKEN or not REPO_OWNER or not REPO_NAME:
                 return create_response(200, [])
 
-            url = f"https://api.github.com/repos/{REPO_OWNER}/{REPO_NAME}/commits?path=resume.json&per_page=10"
+            v_name, filename, s3_key = get_version_key(version)
+            url = f"https://api.github.com/repos/{REPO_OWNER}/{REPO_NAME}/commits?path=resumes/{filename}&per_page=10"
             req = urllib.request.Request(url, headers={
                 "Authorization": f"token {GITHUB_TOKEN}",
                 "User-Agent": "Resume-Editor-Lambda"
@@ -314,7 +394,7 @@ def handler(event, context):
             instruction = body.get("instruction", "")
             job_desc = body.get("job_description", "")
             agent_mode = body.get("agent_mode", True) if path == "/agent" else body.get("agent_mode", False)
-            current_resume = get_current_resume()
+            current_resume = get_current_resume(version)
 
             if not instruction and not job_desc:
                 return create_response(400, {"error": "Missing instruction or job_description"})
@@ -331,6 +411,8 @@ def handler(event, context):
             if not byok.get("model_id") and headers_lower.get("x-model-id"):
                 byok["model_id"] = headers_lower.get("x-model-id")
 
+            v_name, filename, s3_key = get_version_key(version)
+
             # If agentic mode requested or hitting /agent endpoint
             if agent_mode and ResumeAgent is not None:
                 agent = ResumeAgent(bedrock_client=bedrock, bedrock_model_id=BEDROCK_MODEL_ID, compile_func=compile_typst)
@@ -341,26 +423,34 @@ def handler(event, context):
                     byok=byok
                 )
 
-
                 updated_resume = result["data"]
                 
                 # Save to /tmp
-                tmp_path = "/tmp/resume.json" if os.path.exists("/tmp") else "resume.json"
-                with open(tmp_path, "w") as f:
+                tmp_path = f"/tmp/resumes/{filename}" if os.path.exists("/tmp") else f"resumes/{filename}"
+                os.makedirs(os.path.dirname(tmp_path), exist_ok=True)
+                with open(tmp_path, "w", encoding="utf-8") as f:
                     json.dump(updated_resume, f, indent=2)
+
+                if os.path.exists("./resumes"):
+                    try:
+                        with open(f"./resumes/{filename}", "w", encoding="utf-8") as f:
+                            json.dump(updated_resume, f, indent=2)
+                    except Exception:
+                        pass
 
                 # Persist update to S3
                 if BUCKET_NAME:
                     try:
                         s3.put_object(
                             Bucket=BUCKET_NAME,
-                            Key="resume.json",
+                            Key=s3_key,
                             Body=json.dumps(updated_resume, indent=2).encode("utf-8"),
                             ContentType="application/json"
                         )
                     except Exception as s3_err:
                         print(f"Warning: Failed to persist updated resume to S3: {s3_err}")
 
+                result["version"] = v_name
                 return create_response(200, result)
 
             # Single-pass legacy update fallback
@@ -391,7 +481,6 @@ def handler(event, context):
                     return create_response(403, {"error": "Bedrock Model access denied. Ensure model access is enabled in your AWS console."})
                 return create_response(502, {"error": f"Bedrock Converse API error: {err_msg}"})
 
-
             response_text = response["output"]["message"]["content"][0]["text"]
             
             # Extract JSON from output
@@ -403,16 +492,24 @@ def handler(event, context):
                 updated_resume = json.loads(response_text)
 
             # Save to /tmp
-            tmp_path = "/tmp/resume.json" if os.path.exists("/tmp") else "resume.json"
-            with open(tmp_path, "w") as f:
+            tmp_path = f"/tmp/resumes/{filename}" if os.path.exists("/tmp") else f"resumes/{filename}"
+            os.makedirs(os.path.dirname(tmp_path), exist_ok=True)
+            with open(tmp_path, "w", encoding="utf-8") as f:
                 json.dump(updated_resume, f, indent=2)
+
+            if os.path.exists("./resumes"):
+                try:
+                    with open(f"./resumes/{filename}", "w", encoding="utf-8") as f:
+                        json.dump(updated_resume, f, indent=2)
+                except Exception:
+                    pass
 
             # Persist update to S3
             if BUCKET_NAME:
                 try:
                     s3.put_object(
                         Bucket=BUCKET_NAME,
-                        Key="resume.json",
+                        Key=s3_key,
                         Body=json.dumps(updated_resume, indent=2).encode("utf-8"),
                         ContentType="application/json"
                     )
@@ -423,6 +520,7 @@ def handler(event, context):
 
             return create_response(200, {
                 "status": "success",
+                "version": v_name,
                 "data": updated_resume,
                 "pdf_base64": base64.b64encode(pdf_bytes).decode("utf-8")
             })
@@ -430,16 +528,17 @@ def handler(event, context):
 
         # POST /commit (Push to GitHub)
         elif path == "/commit" and http_method == "POST":
-            commit_msg = body.get("message", "Update resume via Serverless Resume Editor")
+            commit_msg = body.get("message", f"Update resume ({version}) via Serverless Resume Editor")
             if not GITHUB_TOKEN or not REPO_OWNER or not REPO_NAME:
                 return create_response(400, {"error": "GitHub credentials not configured"})
 
-            data = get_current_resume()
+            v_name, filename, s3_key = get_version_key(version)
+            data = get_current_resume(version)
             content_b64 = base64.b64encode(json.dumps(data, indent=2).encode("utf-8")).decode("utf-8")
 
-            # Check existing file SHA
+            github_path = f"resumes/{filename}"
             sha = ""
-            url = f"https://api.github.com/repos/{REPO_OWNER}/{REPO_NAME}/contents/resume.json"
+            url = f"https://api.github.com/repos/{REPO_OWNER}/{REPO_NAME}/contents/{github_path}"
             req = urllib.request.Request(url, headers={
                 "Authorization": f"token {GITHUB_TOKEN}",
                 "User-Agent": "Resume-Editor-Lambda"
@@ -470,6 +569,7 @@ def handler(event, context):
                 res_body = json.loads(r.read().decode("utf-8"))
                 return create_response(200, {
                     "status": "success",
+                    "version": v_name,
                     "pushed": True,
                     "commit": res_body.get("commit", {}).get("sha", "")
                 })

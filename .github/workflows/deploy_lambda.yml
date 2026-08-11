@@ -5,8 +5,8 @@ on:
     branches: [ main ]
     paths:
       - 'lambda_src/**'
-      - 'resume.json'
-      - 'template.typ'
+      - 'resumes/**'
+      - 'templates/**'
 
 env:
   AWS_REGION: us-east-1
@@ -36,7 +36,7 @@ jobs:
           cd lambda_src
           zip -r ../handler.zip . -x "*__pycache__*" "*tests/*"
           cd ..
-          zip -g handler.zip resume.json template.typ
+          zip -r -g handler.zip resumes templates
 
       - name: Deploy Code to AWS Lambda
         run: |

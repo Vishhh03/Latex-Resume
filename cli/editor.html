@@ -47,10 +47,19 @@
                 <h1 class="text-sm font-semibold text-white tracking-tight">Serverless Typst Resume Editor</h1>
                 <p class="text-[11px] text-zinc-400">AWS Lambda & Amazon Bedrock AI</p>
             </div>
-            <span class="ml-2 px-2 py-0.5 rounded text-[11px] font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center gap-1.5">
+            <span class="ml-1 px-2 py-0.5 rounded text-[11px] font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center gap-1.5">
                 <span class="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
                 Connected
             </span>
+
+            <!-- Version Switcher -->
+            <div class="ml-2 flex items-center gap-1.5 bg-zinc-800/80 px-2.5 py-1 border border-zinc-700/80 rounded text-xs">
+                <span class="text-zinc-400 font-medium">Version:</span>
+                <select id="version-select" class="bg-transparent text-white font-semibold outline-none cursor-pointer">
+                    <option value="default" class="bg-zinc-900 text-white">default</option>
+                </select>
+                <button id="new-version-btn" title="Create New Version" class="text-zinc-400 hover:text-white ml-1 font-bold text-sm leading-none">+</button>
+            </div>
         </div>
 
         <div class="flex items-center gap-2">
@@ -250,6 +259,23 @@
 
     </main>
 
+    <!-- Version Creation Modal -->
+    <div id="version-modal" class="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm hidden flex items-center justify-center">
+        <div class="bg-zinc-900 border border-zinc-800 rounded p-5 max-w-md w-full mx-4 shadow-2xl space-y-3">
+            <h3 class="text-base font-bold text-white">Create New Resume Version</h3>
+            <p class="text-xs text-zinc-400">Enter a short version identifier (e.g. <code class="text-emerald-400 font-mono">swe</code>, <code class="text-emerald-400 font-mono">pm</code>, <code class="text-emerald-400 font-mono">devops</code>). It will clone your current resume as a starting point.</p>
+            <input 
+                type="text" 
+                id="version-name-input" 
+                placeholder="Version name (e.g. swe)" 
+                class="w-full px-3.5 py-2 bg-zinc-950 border border-zinc-800 rounded text-xs text-white placeholder-zinc-500 outline-none focus:border-zinc-400">
+            <div class="flex justify-end gap-2 pt-2">
+                <button id="version-cancel-btn" class="px-3.5 py-1.5 text-xs bg-zinc-800 hover:bg-zinc-700 text-zinc-200 rounded">Cancel</button>
+                <button id="version-create-btn" class="px-3.5 py-1.5 text-xs bg-emerald-600 hover:bg-emerald-500 text-white font-medium rounded">Create Version</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Commit Modal -->
     <div id="commit-modal" class="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm hidden flex items-center justify-center">
         <div class="bg-zinc-900 border border-zinc-800 rounded p-5 max-w-md w-full mx-4 shadow-2xl space-y-3">
@@ -274,15 +300,22 @@
 
     <script>
         // --- UI State Management ---
+        let currentVersion = 'default';
+        const versionSelect = document.getElementById('version-select');
+        const newVersionBtn = document.getElementById('new-version-btn');
+        const versionModal = document.getElementById('version-modal');
+        const versionCancelBtn = document.getElementById('version-cancel-btn');
+        const versionCreateBtn = document.getElementById('version-create-btn');
+        const versionNameInput = document.getElementById('version-name-input');
+
         const tabAiBtn = document.getElementById('tab-ai-btn');
         const tabJsonBtn = document.getElementById('tab-json-btn');
         const tabAiContent = document.getElementById('tab-ai-content');
         const tabJsonContent = document.getElementById('tab-json-content');
-        const toggleJdBtn = document.getElementById('toggle-jd-btn');
-        const jdContainer = document.getElementById('jd-container');
         const pdfFrame = document.getElementById('pdf-frame');
         const pdfLoading = document.getElementById('pdf-loading');
         const refreshPdfBtn = document.getElementById('refresh-pdf-btn');
+        const downloadPdfBtn = document.getElementById('download-pdf-btn');
         const loadJsonBtn = document.getElementById('load-json-btn');
         const jsonTextarea = document.getElementById('json-textarea');
 
@@ -298,6 +331,72 @@
             document.getElementById('toast-container').appendChild(toast);
             setTimeout(() => toast.remove(), 4000);
         }
+
+        // --- Version Management ---
+        async function fetchVersions() {
+            try {
+                const res = await fetch('/api/versions');
+                if (res.ok) {
+                    const data = await res.json();
+                    const versions = data.versions || ['default'];
+                    versionSelect.innerHTML = versions.map(v => 
+                        `<option value="${v}" ${v === currentVersion ? 'selected' : ''} class="bg-zinc-900 text-white">${v}</option>`
+                    ).join('');
+                }
+            } catch (e) {
+                console.error("Failed to load versions:", e);
+            }
+        }
+
+        function updatePdfView() {
+            pdfLoading.classList.remove('hidden');
+            pdfFrame.src = `/api/pdf?version=${encodeURIComponent(currentVersion)}&t=${Date.now()}`;
+            downloadPdfBtn.href = `/api/pdf?version=${encodeURIComponent(currentVersion)}`;
+            setTimeout(() => pdfLoading.classList.add('hidden'), 800);
+        }
+
+        versionSelect.addEventListener('change', (e) => {
+            currentVersion = e.target.value;
+            fetchJsonData();
+            updatePdfView();
+            showToast(`Switched to resume version '${currentVersion}'`, 'info');
+        });
+
+        newVersionBtn.addEventListener('click', () => {
+            versionNameInput.value = '';
+            versionModal.classList.remove('hidden');
+        });
+
+        versionCancelBtn.addEventListener('click', () => {
+            versionModal.classList.add('hidden');
+        });
+
+        versionCreateBtn.addEventListener('click', async () => {
+            const name = versionNameInput.value.trim().toLowerCase().replace(/[^a-z0-9_-]/g, '');
+            if (!name) {
+                showToast('Please enter a valid alphanumeric version name', 'error');
+                return;
+            }
+            versionModal.classList.add('hidden');
+            currentVersion = name;
+            
+            // Auto-bootstrap new version by saving current resume data to new version
+            try {
+                const currentData = jsonTextarea.value ? JSON.parse(jsonTextarea.value) : {};
+                await fetch(`/api/save?version=${encodeURIComponent(currentVersion)}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ resume: currentData, version: currentVersion })
+                });
+                await fetchVersions();
+                versionSelect.value = currentVersion;
+                fetchJsonData();
+                updatePdfView();
+                showToast(`Created new version '${currentVersion}'!`, 'success');
+            } catch (e) {
+                showToast('Failed to create version: ' + e, 'error');
+            }
+        });
 
         // Tab Switching
         tabAiBtn.addEventListener('click', () => {
@@ -321,6 +420,57 @@
         if (toggleByokBtn && byokContainer) {
             toggleByokBtn.addEventListener('click', () => {
                 byokContainer.classList.toggle('hidden');
+            });
+        }
+
+        // Refresh PDF
+        refreshPdfBtn.addEventListener('click', () => {
+            updatePdfView();
+            showToast('PDF Preview Refreshed', 'info');
+        });
+
+        // Fetch JSON Data
+        async function fetchJsonData() {
+            try {
+                const res = await fetch(`/api/resume?version=${encodeURIComponent(currentVersion)}`);
+                if (res.ok) {
+                    const data = await res.json();
+                    jsonTextarea.value = JSON.stringify(data, null, 2);
+                }
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        // Initial Load
+        fetchVersions();
+        fetchJsonData();
+
+        loadJsonBtn.addEventListener('click', fetchJsonData);
+
+        const saveJsonBtn = document.getElementById('save-json-btn');
+        if (saveJsonBtn) {
+            saveJsonBtn.addEventListener('click', async () => {
+                try {
+                    const parsed = JSON.parse(jsonTextarea.value);
+                    pdfLoading.classList.remove('hidden');
+                    const res = await fetch(`/api/save?version=${encodeURIComponent(currentVersion)}`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ resume: parsed, version: currentVersion })
+                    });
+                    if (res.ok) {
+                        showToast(`JSON Resume ('${currentVersion}') Saved & Compiled!`, 'success');
+                        updatePdfView();
+                        fetchVersions();
+                    } else {
+                        showToast('Failed to save JSON', 'error');
+                    }
+                } catch (e) {
+                    showToast('Invalid JSON: ' + (e instanceof Error ? e.message : String(e)), 'error');
+                } finally {
+                    pdfLoading.classList.add('hidden');
+                }
             });
         }
 
@@ -348,10 +498,9 @@
                 const job_description = document.getElementById('job_description').value;
                 event.detail.headers['Content-Type'] = 'application/json';
                 event.detail.parameters = {};
-                event.detail.body = JSON.stringify({ instruction, job_description, agent_mode: isAgent, byok });
+                event.detail.body = JSON.stringify({ instruction, job_description, agent_mode: isAgent, byok, version: currentVersion });
             }
         });
-
 
         document.body.addEventListener('htmx:afterRequest', (event) => {
             if (event.detail.path === '/api/update' || event.detail.path === '/api/agent') {
@@ -361,11 +510,11 @@
                     try {
                         const response = JSON.parse(event.detail.xhr.responseText);
                         if (response.status === 'success' || response.data) {
-                            showToast('Resume updated successfully by Agent!', 'success');
+                            showToast(`Resume ('${currentVersion}') updated successfully!`, 'success');
                             if (response.pdf_base64) {
                                 pdfFrame.src = `data:application/pdf;base64,${response.pdf_base64}`;
                             } else {
-                                pdfFrame.src = `/api/pdf?t=${Date.now()}`;
+                                updatePdfView();
                             }
                             if (response.data) {
                                 jsonTextarea.value = JSON.stringify(response.data, null, 2);
@@ -398,7 +547,7 @@
                             showToast(response.error || 'Failed to update resume', 'error');
                         }
                     } catch (e) {
-                        pdfFrame.src = `/api/pdf?t=${Date.now()}`;
+                        updatePdfView();
                     }
                 } else {
                     showToast('Error sending update request', 'error');
@@ -416,18 +565,18 @@
         commitCancelBtn.addEventListener('click', () => commitModal.classList.add('hidden'));
 
         commitConfirmBtn.addEventListener('click', async () => {
-            const message = document.getElementById('commit-message-input').value.trim() || 'Update resume via Serverless Resume Editor';
+            const message = document.getElementById('commit-message-input').value.trim() || `Update resume (${currentVersion}) via Serverless Resume Editor`;
             commitConfirmBtn.disabled = true;
             commitConfirmBtn.textContent = 'Pushing...';
             try {
                 const res = await fetch('/api/commit', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ message })
+                    body: JSON.stringify({ message, version: currentVersion })
                 });
                 const data = await res.json();
                 if (res.ok && data.status === 'success') {
-                    showToast('Changes pushed to GitHub!', 'success');
+                    showToast(`Changes for '${currentVersion}' pushed to GitHub!`, 'success');
                     commitModal.classList.add('hidden');
                 } else {
                     showToast('Push failed: ' + (data.error || 'Unknown error'), 'error');

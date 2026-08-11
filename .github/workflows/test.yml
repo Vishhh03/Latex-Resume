@@ -36,7 +36,10 @@ jobs:
 
       - name: Test Typst PDF Compilation
         run: |
-          typst compile --root . template.typ test_output.pdf
+          mkdir -p /tmp/typst_test
+          cp resumes/resume.json /tmp/typst_test/resume.json
+          cp templates/template.typ /tmp/typst_test/template.typ
+          typst compile --root /tmp/typst_test /tmp/typst_test/template.typ test_output.pdf
           test -f test_output.pdf && echo "✓ Typst PDF compilation successful!"
 
   test-frontend:

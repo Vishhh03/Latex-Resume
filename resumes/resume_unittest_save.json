@@ -1,0 +1,8 @@
+{
+  "basics": {
+    "name": "Test Candidate",
+    "title": "Engineer",
+    "email": "test@example.com",
+    "location": "Remote"
+  }
+}

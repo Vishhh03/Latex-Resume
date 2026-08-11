@@ -46,19 +46,19 @@ AI-assisted resume modifications are processed via the Amazon Bedrock Converse A
 
 ```
 .
+├── resumes/            # Candidate JSON data sources (master & versioned)
+│   ├── resume.json     # Default master candidate data source
+│   └── resume_swe.json # Role-specific candidate data variations
+├── templates/          # Document layout and design templates
+│   ├── template.typ    # Typst layout & typography rules
+│   └── resume.tex      # Legacy LaTeX layout template
 ├── lambda_src/         # Python 3.11 AWS Lambda backend & handler logic
-│   ├── handler.py      # Core API router (/resume, /pdf, /update, /commit)
+│   ├── handler.py      # Core API router (/resume, /pdf, /update, /commit, /versions)
 │   ├── schema.json     # Draft-07 JSON Schema definition
 │   └── test_handler.py # Automated backend unit test suite
 ├── terraform/          # Infrastructure-as-Code (IaC) configuration
-│   ├── lambda.tf       # Lambda Function & Function URL resource
-│   ├── iam.tf          # Execution roles & GitHub Actions OIDC provider
-│   ├── storage.tf      # S3 bucket for draft storage
-│   └── budget.tf       # AWS budget cost control & alerts
 ├── web/                # Next.js frontend preview dashboard
-├── cli/                # Terminal CLI (npx typst-resume-cli)
-├── template.typ        # Typst document layout & typography rules
-└── resume.json         # Master candidate data source
+└── cli/                # Terminal CLI (npx typst-resume-cli)
 ```
 
 ---
@@ -66,14 +66,14 @@ AI-assisted resume modifications are processed via the Amazon Bedrock Converse A
 ## Local Development & Testing
 
 ### 1. Compile PDF Locally
-Compile `resume.json` using the local Typst binary:
+Compile `resumes/resume.json` using the local Typst binary:
 ```powershell
-.\typst.exe compile template.typ resume.pdf
+.\typst.exe compile --root . templates/template.typ resumes/resume.pdf
 ```
 
 To watch for file edits and recompile automatically:
 ```powershell
-.\typst.exe watch template.typ resume.pdf
+.\typst.exe watch --root . templates/template.typ resumes/resume.pdf
 ```
 
 ### 2. Run Backend Unit Tests

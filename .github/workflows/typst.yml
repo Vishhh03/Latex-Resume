@@ -4,9 +4,8 @@ on:
   push:
     branches: [ main ]
     paths:
-      - 'resume.json'
-      - 'template.typ'
-      - 'resume.tex'
+      - 'resumes/**'
+      - 'templates/**'
       - '.github/workflows/typst.yml'
   workflow_dispatch:
 
@@ -19,7 +18,7 @@ concurrency:
 
 jobs:
   build:
-    name: Compile Typst Resume PDF
+    name: Compile Typst Resume PDFs
     runs-on: ubuntu-latest
 
     steps:
@@ -31,33 +30,40 @@ jobs:
         with:
           typst-version: 'latest'
 
-      - name: Compile PDF with Typst
-        run: |
-          typst compile --root . template.typ resume.pdf
-          echo "✓ Compiled resume.pdf in ~15ms"
-
-      - name: Push PDF to pdf-output Branch
+      - name: Compile All Resume PDFs with Typst
         run: |
           mkdir -p /tmp/pdf_out
-          cp resume.pdf /tmp/pdf_out/
-          
+          for f in resumes/*.json; do
+            if [ -f "$f" ]; then
+              base=$(basename "$f" .json)
+              mkdir -p "/tmp/typst_build_$base"
+              cp "$f" "/tmp/typst_build_$base/resume.json"
+              cp templates/template.typ "/tmp/typst_build_$base/template.typ"
+              typst compile --root "/tmp/typst_build_$base" "/tmp/typst_build_$base/template.typ" "resumes/$base.pdf"
+              cp "resumes/$base.pdf" /tmp/pdf_out/
+              echo "✓ Compiled resumes/$base.pdf"
+            fi
+          done
+
+      - name: Push PDFs to pdf-output Branch
+        run: |
           git checkout --orphan pdf-output-temp
           git rm -rf .
           
-          cp /tmp/pdf_out/resume.pdf .
-          git add resume.pdf
+          cp /tmp/pdf_out/*.pdf . 2>/dev/null || true
+          git add *.pdf
           
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git commit -m "chore: auto-compile resume.pdf [skip ci]" || true
+          git commit -m "chore: auto-compile resume PDFs [skip ci]" || true
           git push origin pdf-output-temp:pdf-output --force
 
       - name: Update GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: latest
-          name: Latest Resume PDF
-          files: resume.pdf
+          name: Latest Resume PDFs
+          files: resumes/*.pdf
           body: "Automated Typst PDF build from main branch."
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

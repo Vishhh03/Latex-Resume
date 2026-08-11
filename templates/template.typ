@@ -1,4 +1,4 @@
-#let data = json("resume.json")
+#let data = json("/resumes/resume.json")
 
 #set page(
   paper: "a4",

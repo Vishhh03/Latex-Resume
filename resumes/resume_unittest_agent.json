@@ -1,0 +1,57 @@
+{
+  "basics": {
+    "name": "Form Test",
+    "title": "Cloud Architect",
+    "email": "a@b.com",
+    "location": {
+      "city": "c",
+      "state": "State",
+      "country": "Country"
+    }
+  },
+  "summary": "Experienced Cloud Architect with expertise in AWS, Docker, Lambda, Python, and Terraform. Requires innovative solutions to optimize cloud infrastructure.",
+  "work": [
+    {
+      "company": "Tech Innovators",
+      "site": "www.techinnovators.com",
+      "position": "Senior Cloud Architect",
+      "startDate": "2020-01",
+      "endDate": "Present",
+      "summary": "Led cloud infrastructure projects leveraging AWS, Docker, and Terraform to enhance scalability and efficiency."
+    }
+  ],
+  "technologies": [
+    {
+      "name": "AWS",
+      "level": "Expert"
+    },
+    {
+      "name": "Docker",
+      "level": "Advanced"
+    },
+    {
+      "name": "Lambda",
+      "level": "Advanced"
+    },
+    {
+      "name": "Python",
+      "level": "Advanced"
+    },
+    {
+      "name": "Terraform",
+      "level": "Expert"
+    }
+  ],
+  "skills": [
+    {
+      "name": "Target Job Keywords",
+      "keywords": [
+        "aws",
+        "docker.",
+        "lambda",
+        "python",
+        "requires"
+      ]
+    }
+  ]
+}

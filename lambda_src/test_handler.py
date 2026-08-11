@@ -15,9 +15,10 @@ from lambda_src.handler import (
 class TestResumeServerlessBackend(unittest.TestCase):
 
     def test_resume_json_exists_and_valid(self):
-        """Verify resume.json exists and contains required schema sections."""
-        self.assertTrue(os.path.exists("./resume.json"), "resume.json should exist in root")
-        with open("./resume.json", "r") as f:
+        """Verify resume.json exists in resumes/ and contains required schema sections."""
+        resume_path = "./resumes/resume.json" if os.path.exists("./resumes/resume.json") else "./resume.json"
+        self.assertTrue(os.path.exists(resume_path), "resume.json should exist in resumes/")
+        with open(resume_path, "r", encoding="utf-8") as f:
             data = json.load(f)
         
         self.assertIn("basics", data)
@@ -28,12 +29,14 @@ class TestResumeServerlessBackend(unittest.TestCase):
         self.assertEqual(data["basics"]["name"], "Vishal Shaji")
 
     def test_template_typ_exists(self):
-        """Verify template.typ exists in root."""
-        self.assertTrue(os.path.exists("./template.typ"), "template.typ should exist in root")
+        """Verify template.typ exists in templates/."""
+        template_path = "./templates/template.typ" if os.path.exists("./templates/template.typ") else "./template.typ"
+        self.assertTrue(os.path.exists(template_path), "template.typ should exist in templates/")
 
     def test_typst_compilation_local(self):
         """Test local Typst compilation using typst CLI."""
-        with open("./resume.json", "r") as f:
+        resume_path = "./resumes/resume.json" if os.path.exists("./resumes/resume.json") else "./resume.json"
+        with open(resume_path, "r", encoding="utf-8") as f:
             data = json.load(f)
         pdf_bytes = compile_typst(data)
         self.assertTrue(len(pdf_bytes) > 0, "Compiled PDF bytes should be non-empty")
@@ -134,7 +137,7 @@ class TestResumeServerlessBackend(unittest.TestCase):
         event = {
             "rawPath": "/update",
             "requestContext": {"http": {"method": "POST"}},
-            "body": json.dumps({"instruction": "Change title to Senior Cloud Engineer"})
+            "body": json.dumps({"instruction": "Change title to Senior Cloud Engineer", "version": "mock_update"})
         }
 
         res = handler(event, None)
@@ -166,7 +169,7 @@ class TestResumeServerlessBackend(unittest.TestCase):
         self.assertIn("versions", body)
 
     def test_handler_save(self):
-        """Test POST /save endpoint."""
+        """Test POST /save endpoint with version parameter."""
         sample_resume = {
             "basics": {
                 "name": "Test Candidate",
@@ -178,7 +181,7 @@ class TestResumeServerlessBackend(unittest.TestCase):
         event = {
             "rawPath": "/save",
             "requestContext": {"http": {"method": "POST"}},
-            "body": json.dumps({"resume": sample_resume})
+            "body": json.dumps({"resume": sample_resume, "version": "unittest_save"})
         }
         res = handler(event, None)
         self.assertEqual(res["statusCode"], 200)
@@ -210,7 +213,7 @@ class TestResumeServerlessBackend(unittest.TestCase):
         event = {
             "rawPath": "/update",
             "requestContext": {"http": {"method": "POST"}},
-            "body": "instruction=Update+my+skills&job_description=Target+JD"
+            "body": "instruction=Update+my+skills&job_description=Target+JD&version=unittest_form"
         }
         res = handler(event, None)
         self.assertEqual(res["statusCode"], 200)
@@ -251,7 +254,8 @@ class TestResumeServerlessBackend(unittest.TestCase):
             "requestContext": {"http": {"method": "POST"}},
             "body": json.dumps({
                 "instruction": "Tailor resume for Cloud Architect role",
-                "job_description": "Requires AWS Lambda, Python, Terraform, and Docker."
+                "job_description": "Requires AWS Lambda, Python, Terraform, and Docker.",
+                "version": "unittest_agent"
             })
         }
         res = handler(event, None)
