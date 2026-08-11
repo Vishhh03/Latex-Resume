@@ -8,17 +8,20 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <style>
         body {
             font-family: 'Inter', sans-serif;
             background-color: #09090b;
             color: #f4f4f5;
         }
-        .htmx-request .spinner {
+        .font-mono {
+            font-family: 'JetBrains Mono', monospace;
+        }
+        .htmx-request .spinner-icon {
             display: inline-block;
         }
-        .spinner {
+        .spinner-icon {
             display: none;
         }
         ::-webkit-scrollbar {
@@ -30,48 +33,49 @@
         }
         ::-webkit-scrollbar-thumb {
             background: #27272a;
-            border-radius: 2px;
+            border-radius: 3px;
         }
         ::-webkit-scrollbar-thumb:hover {
             background: #3f3f46;
         }
     </style>
 </head>
-<body class="h-screen flex flex-col overflow-hidden bg-zinc-950 text-zinc-100">
+<body class="h-screen flex flex-col overflow-hidden bg-zinc-950 text-zinc-100 antialiased selection:bg-emerald-500/30 selection:text-emerald-200">
 
     <!-- Header Navigation Bar -->
-    <header class="h-14 border-b border-zinc-800 bg-zinc-900 flex items-center justify-between px-5 z-20">
+    <header class="h-14 border-b border-zinc-800/80 bg-zinc-900/90 backdrop-blur-md flex items-center justify-between px-5 z-20 shrink-0">
         <div class="flex items-center gap-3">
-            <div class="h-7 w-7 rounded bg-zinc-800 border border-zinc-700 flex items-center justify-center font-mono text-xs font-bold text-white">R</div>
+            <div class="h-8 w-8 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-700 border border-emerald-400/30 flex items-center justify-center font-mono text-sm font-extrabold text-zinc-950 shadow-sm">R</div>
             <div>
-                <h1 class="text-sm font-semibold text-white tracking-tight">Serverless Typst Resume Editor</h1>
+                <h1 class="text-sm font-bold text-white tracking-tight">
+                    Serverless Typst Resume Editor
+                </h1>
                 <p class="text-[11px] text-zinc-400">AWS Lambda & Amazon Bedrock AI</p>
             </div>
-            <span class="ml-1 px-2 py-0.5 rounded text-[11px] font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center gap-1.5">
-                <span class="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-                Connected
-            </span>
 
             <!-- Version Switcher -->
-            <div class="ml-2 flex items-center gap-1.5 bg-zinc-800/80 px-2.5 py-1 border border-zinc-700/80 rounded text-xs">
+            <div class="ml-3 flex items-center gap-2 bg-zinc-950/80 px-3 py-1 border border-zinc-800 rounded-md text-xs">
                 <span class="text-zinc-400 font-medium">Version:</span>
                 <select id="version-select" class="bg-transparent text-white font-semibold outline-none cursor-pointer">
                     <option value="default" class="bg-zinc-900 text-white">default</option>
                 </select>
-                <button id="new-version-btn" title="Create New Version" class="text-zinc-400 hover:text-white ml-1 font-bold text-sm leading-none">+</button>
+                <button id="new-version-btn" title="Create New Version (+)" class="text-emerald-400 hover:text-emerald-300 ml-1 font-bold text-sm leading-none transition-colors">+</button>
             </div>
         </div>
 
-        <div class="flex items-center gap-2">
-            <button id="refresh-pdf-btn" class="px-3 py-1.5 text-xs font-medium bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-zinc-700 rounded transition-colors">
+        <div class="flex items-center gap-2.5">
+            <button id="refresh-pdf-btn" class="px-3 py-1.5 text-xs font-medium bg-zinc-800/90 hover:bg-zinc-700/90 text-zinc-200 border border-zinc-700/80 rounded-md transition-all active:scale-95 flex items-center gap-1.5 shadow-sm">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
                 Refresh Preview
             </button>
 
-            <button id="commit-open-btn" class="px-3 py-1.5 text-xs font-medium bg-emerald-600 hover:bg-emerald-500 text-white rounded transition-colors">
+            <button id="commit-open-btn" class="px-3 py-1.5 text-xs font-medium bg-emerald-600 hover:bg-emerald-500 text-white rounded-md transition-all active:scale-95 flex items-center gap-1.5 shadow-sm">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
                 Commit to GitHub
             </button>
 
-            <a id="download-pdf-btn" href="/api/pdf" download="resume.pdf" target="_blank" class="px-3 py-1.5 text-xs font-medium bg-zinc-100 hover:bg-white text-zinc-900 rounded transition-colors">
+            <a id="download-pdf-btn" href="/api/pdf" download="resume.pdf" target="_blank" class="px-3.5 py-1.5 text-xs font-semibold bg-zinc-100 hover:bg-white text-zinc-950 rounded-md transition-all active:scale-95 shadow-sm flex items-center gap-1.5">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
                 Download PDF
             </a>
         </div>
@@ -81,84 +85,87 @@
     <main class="flex-1 flex w-full max-w-[1920px] mx-auto p-3 gap-3 overflow-hidden h-[calc(100vh-56px)]">
 
         <!-- Left Editor Panel -->
-        <section class="w-1/2 flex flex-col bg-zinc-900/90 border border-zinc-800 rounded overflow-hidden shadow-xl">
+        <section class="w-1/2 flex flex-col bg-zinc-900/90 border border-zinc-800/90 rounded-lg overflow-hidden shadow-2xl">
             
             <!-- Tab Navigation Header -->
-            <div class="flex items-center border-b border-zinc-800 bg-zinc-900 px-3 pt-1.5 gap-1">
-                <button id="tab-ai-btn" class="px-3.5 py-2 text-xs font-medium border-b-2 border-white text-white transition-colors">
+            <div class="flex items-center border-b border-zinc-800 bg-zinc-900/80 px-3 pt-2 gap-1 shrink-0">
+                <button id="tab-ai-btn" class="px-4 py-2 text-xs font-semibold border-b-2 border-emerald-400 text-emerald-400 transition-colors flex items-center gap-1.5">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
                     AI Prompt Editor
                 </button>
-                <button id="tab-json-btn" class="px-3.5 py-2 text-xs font-medium border-b-2 border-transparent text-zinc-400 hover:text-zinc-200 transition-colors">
+                <button id="tab-json-btn" class="px-4 py-2 text-xs font-semibold border-b-2 border-transparent text-zinc-400 hover:text-zinc-200 transition-colors flex items-center gap-1.5">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path></svg>
                     Raw JSON Data
                 </button>
             </div>
 
             <!-- Tab Content Area -->
-            <div class="flex-1 overflow-y-auto p-5">
+            <div class="flex-1 overflow-y-auto p-5 space-y-4">
                 
                 <!-- AI Prompt Tab -->
                 <div id="tab-ai-content" class="space-y-4">
                     <div>
-                        <h2 class="text-base font-bold text-white mb-0.5">Update Resume with AI</h2>
-                        <p class="text-xs text-zinc-400">Describe desired changes. Amazon Bedrock will structure updates using JSON schema validation.</p>
+                        <h2 class="text-base font-bold text-white mb-0.5 flex items-center gap-2">
+                            Update Resume with AI
+                        </h2>
+                        <p class="text-xs text-zinc-400">Describe desired changes. Amazon Bedrock will structure updates using strict JSON schema validation.</p>
                     </div>
 
                     <form id="ai-update-form" hx-post="/api/update" hx-swap="none" class="space-y-4">
                         <div>
-                            <label for="instruction" class="block text-xs font-medium text-zinc-300 mb-1">
+                            <label for="instruction" class="block text-xs font-medium text-zinc-300 mb-1.5">
                                 AI Instruction / Desired Changes
                             </label>
                             <textarea 
                                 id="instruction" 
                                 name="instruction" 
-                                rows="5" 
+                                rows="4" 
                                 required
-                                class="w-full px-3.5 py-2.5 bg-zinc-950 border border-zinc-800 rounded focus:ring-1 focus:ring-zinc-400 focus:border-zinc-400 text-xs text-white placeholder-zinc-500 transition-all outline-none resize-none" 
+                                class="w-full px-3.5 py-2.5 bg-zinc-950 border border-zinc-800/90 rounded-md focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 text-xs text-white placeholder-zinc-500 transition-all outline-none resize-none" 
                                 placeholder="e.g., Highlight DevOps & Kubernetes projects, emphasize cloud engineering accomplishments, and streamline project descriptions..."></textarea>
                         </div>
 
                         <div>
-                            <button type="button" id="toggle-jd-btn" class="text-xs text-zinc-400 hover:text-white transition-colors flex items-center gap-1">
+                            <button type="button" id="toggle-jd-btn" class="text-xs font-semibold text-zinc-400 hover:text-emerald-400 transition-colors flex items-center gap-1">
                                 + Add Job Description (Auto-Tailor)
                             </button>
 
                             <div id="jd-container" class="hidden mt-2.5">
-                                <label for="job_description" class="block text-xs font-medium text-zinc-300 mb-1">
+                                <label for="job_description" class="block text-xs font-medium text-zinc-300 mb-1.5">
                                     Target Job Description
                                 </label>
                                 <textarea 
                                     id="job_description" 
                                     name="job_description" 
-                                    rows="6" 
-                                    class="w-full px-3.5 py-2.5 bg-zinc-950 border border-zinc-800 rounded focus:ring-1 focus:ring-zinc-400 focus:border-zinc-400 text-xs text-white placeholder-zinc-500 transition-all outline-none resize-none" 
+                                    rows="5" 
+                                    class="w-full px-3.5 py-2.5 bg-zinc-950 border border-zinc-800/90 rounded-md focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 text-xs text-white placeholder-zinc-500 transition-all outline-none resize-none" 
                                     placeholder="Paste job description here. AI will tailor keywords and focus areas to match requirements..."></textarea>
                             </div>
                         </div>
 
                         <!-- Agentic Mode Toggle & BYOK Settings -->
-                        <div class="p-3 bg-zinc-950/80 border border-emerald-500/20 rounded space-y-2.5">
+                        <div class="p-3.5 bg-zinc-950/90 border border-emerald-500/20 rounded-md space-y-3 shadow-inner">
                             <div class="flex items-center justify-between">
                                 <div class="flex items-center gap-2.5">
-                                    <input type="checkbox" id="agent-mode-checkbox" name="agent_mode" checked class="h-4 w-4 rounded accent-emerald-500 bg-zinc-900 border-zinc-700">
+                                    <input type="checkbox" id="agent-mode-checkbox" name="agent_mode" checked class="h-4 w-4 rounded accent-emerald-500 bg-zinc-900 border-zinc-700 cursor-pointer">
                                     <div>
-                                        <label for="agent-mode-checkbox" class="text-xs font-semibold text-emerald-400 cursor-pointer">
+                                        <label for="agent-mode-checkbox" class="text-xs font-bold text-emerald-400 cursor-pointer">
                                             Truly Helpful Resume Agent Mode
                                         </label>
                                         <p class="text-[11px] text-zinc-400">Multi-tool loop: JD Analysis ➔ ATS Scoring ➔ Layout Self-Correction</p>
                                     </div>
                                 </div>
-                                <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">AGENTIC</span>
                             </div>
 
-                            <div class="border-t border-zinc-800/80 pt-2">
-                                <button type="button" id="toggle-byok-btn" class="text-[11px] font-medium text-zinc-400 hover:text-white transition-colors flex items-center gap-1">
+                            <div class="border-t border-zinc-800/80 pt-2.5">
+                                <button type="button" id="toggle-byok-btn" class="text-[11px] font-semibold text-zinc-400 hover:text-white transition-colors flex items-center gap-1">
                                     🔑 BYOK Settings (Use Google Gemini, OpenAI, Anthropic, OpenRouter, or Bedrock)
                                 </button>
-                                <div id="byok-container" class="hidden mt-2 p-2.5 bg-zinc-900/90 border border-zinc-800 rounded space-y-2 text-xs">
-                                    <div class="grid grid-cols-2 gap-2">
+                                <div id="byok-container" class="hidden mt-2.5 p-3 bg-zinc-900/90 border border-zinc-800 rounded-md space-y-2.5 text-xs">
+                                    <div class="grid grid-cols-2 gap-2.5">
                                         <div>
-                                            <label class="block text-[11px] text-zinc-400 mb-0.5">Provider</label>
-                                            <select id="byok-provider" class="w-full px-2 py-1 bg-zinc-950 border border-zinc-800 rounded text-xs text-white outline-none">
+                                            <label class="block text-[11px] font-medium text-zinc-400 mb-1">Provider</label>
+                                            <select id="byok-provider" class="w-full px-2.5 py-1.5 bg-zinc-950 border border-zinc-800 rounded-md text-xs text-white outline-none focus:border-emerald-500">
                                                 <option value="bedrock">AWS Bedrock (Default)</option>
                                                 <option value="google">Google Gemini (gemini-1.5-flash / pro)</option>
                                                 <option value="openai">OpenAI (gpt-4o / gpt-4o-mini)</option>
@@ -167,19 +174,17 @@
                                             </select>
                                         </div>
                                         <div>
-                                            <label class="block text-[11px] text-zinc-400 mb-0.5">Custom Model ID (Optional)</label>
-                                            <input type="text" id="byok-model" placeholder="e.g., gpt-4o, claude-3-5-sonnet-20241022" class="w-full px-2 py-1 bg-zinc-950 border border-zinc-800 rounded text-xs text-white outline-none">
+                                            <label class="block text-[11px] font-medium text-zinc-400 mb-1">Custom Model ID (Optional)</label>
+                                            <input type="text" id="byok-model" placeholder="e.g., gpt-4o, claude-3-5-sonnet" class="w-full px-2.5 py-1.5 bg-zinc-950 border border-zinc-800 rounded-md text-xs text-white outline-none focus:border-emerald-500">
                                         </div>
                                     </div>
                                     <div>
-                                        <label class="block text-[11px] text-zinc-400 mb-0.5">API Key (BYOK)</label>
-                                        <input type="password" id="byok-key" placeholder="Paste your API key (sk-..., sk-ant-...)" class="w-full px-2 py-1 bg-zinc-950 border border-zinc-800 rounded text-xs text-white outline-none font-mono">
+                                        <label class="block text-[11px] font-medium text-zinc-400 mb-1">API Key (BYOK)</label>
+                                        <input type="password" id="byok-key" placeholder="Paste your API key (sk-..., AIzaSy...)" class="w-full px-2.5 py-1.5 bg-zinc-950 border border-zinc-800 rounded-md text-xs text-white outline-none font-mono focus:border-emerald-500">
                                     </div>
                                 </div>
                             </div>
-
                         </div>
-
 
                         <div class="flex items-center justify-between pt-1">
                             <span id="ai-status-msg" class="text-xs font-medium text-zinc-400"></span>
@@ -187,21 +192,24 @@
                             <button 
                                 type="submit" 
                                 id="ai-submit-btn"
-                                class="px-5 py-2 bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-bold text-xs rounded transition-colors flex items-center gap-2 shadow">
-                                <span class="spinner text-xs animate-spin font-mono">/</span>
+                                class="px-5 py-2.5 bg-emerald-500 hover:bg-emerald-400 active:scale-95 text-zinc-950 font-bold text-xs rounded-md transition-all flex items-center gap-2 shadow-lg shadow-emerald-500/10">
+                                <svg class="spinner-icon w-4 h-4 animate-spin text-zinc-950" fill="none" viewBox="0 0 24 24">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
                                 <span>Run Resume Agent</span>
                             </button>
                         </div>
                     </form>
 
                     <!-- Agent Execution Trace Log Card -->
-                    <div id="agent-trace-card" class="hidden mt-4 p-3 bg-zinc-950 border border-zinc-800 rounded space-y-2">
+                    <div id="agent-trace-card" class="hidden mt-4 p-3.5 bg-zinc-950 border border-zinc-800 rounded-md space-y-2.5">
                         <div class="flex items-center justify-between border-b border-zinc-800 pb-2">
                             <div class="flex items-center gap-2">
                                 <span class="h-2 w-2 rounded-full bg-emerald-400 animate-pulse"></span>
                                 <h3 class="text-xs font-bold text-white tracking-wide">Agent Execution Trace</h3>
                             </div>
-                            <span id="ats-score-badge" class="text-[11px] font-mono px-2 py-0.5 rounded bg-zinc-800 text-emerald-400 border border-zinc-700">
+                            <span id="ats-score-badge" class="text-[11px] font-mono font-semibold px-2 py-0.5 rounded bg-zinc-900 text-emerald-400 border border-zinc-800">
                                 ATS Score: --
                             </span>
                         </div>
@@ -210,47 +218,50 @@
                     </div>
                 </div>
 
-
                 <!-- Raw JSON Tab -->
                 <div id="tab-json-content" class="hidden space-y-3 h-full flex flex-col">
-                    <div class="flex items-center justify-between">
+                    <div class="flex items-center justify-between shrink-0">
                         <div>
                             <h2 class="text-base font-bold text-white mb-0.5">Resume Data Source</h2>
                             <p class="text-xs text-zinc-400">Structured JSON payload served to Typst compiler.</p>
                         </div>
-                        <div class="flex gap-2">
-                            <button id="save-json-btn" class="px-3 py-1 text-xs bg-emerald-700 hover:bg-emerald-600 text-white font-medium rounded">
-                                Save & Compile JSON
+                        <div class="flex items-center gap-2">
+                            <button id="format-json-btn" class="px-2.5 py-1 text-xs bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-200 font-medium rounded-md transition-colors">
+                                Format JSON
                             </button>
-                            <button id="load-json-btn" class="px-3 py-1 text-xs bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-200 rounded">
-                                Fetch Fresh JSON
+                            <button id="load-json-btn" class="px-2.5 py-1 text-xs bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-200 font-medium rounded-md transition-colors">
+                                Fetch Fresh
+                            </button>
+                            <button id="save-json-btn" class="px-3 py-1 text-xs bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-md transition-colors shadow">
+                                Save & Compile
                             </button>
                         </div>
                     </div>
 
                     <textarea 
                         id="json-textarea" 
-                        rows="24" 
-                        class="w-full flex-1 px-3.5 py-2.5 bg-zinc-950 border border-zinc-800 rounded font-mono text-xs text-emerald-400 outline-none resize-none leading-relaxed"></textarea>
+                        rows="22" 
+                        class="w-full flex-1 px-3.5 py-2.5 bg-zinc-950 border border-zinc-800/90 rounded-md font-mono text-xs text-emerald-400 outline-none resize-none leading-relaxed focus:border-emerald-500/80 transition-colors"></textarea>
                 </div>
 
             </div>
         </section>
 
         <!-- Right PDF Preview Panel -->
-        <section class="w-1/2 flex flex-col bg-zinc-900/90 border border-zinc-800 rounded overflow-hidden shadow-xl relative">
-            <div class="h-9 border-b border-zinc-800 bg-zinc-900 px-3.5 flex items-center justify-between">
-                <span class="text-xs font-medium text-zinc-300">
+        <section class="w-1/2 flex flex-col bg-zinc-900/90 border border-zinc-800/90 rounded-lg overflow-hidden shadow-2xl relative">
+            <div class="h-9 border-b border-zinc-800 bg-zinc-900/80 px-3.5 flex items-center justify-between shrink-0">
+                <span class="text-xs font-semibold text-zinc-300 flex items-center gap-1.5">
+                    <svg class="w-3.5 h-3.5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
                     PDF Preview Render (Typst Engine)
                 </span>
-                <span id="pdf-status-badge" class="text-[11px] text-zinc-500 font-mono">Live Sync Active</span>
+                <span id="pdf-status-badge" class="text-[11px] text-zinc-400 font-mono">Live Sync Active</span>
             </div>
 
-            <div class="flex-1 bg-zinc-950 relative flex items-center justify-center">
+            <div class="flex-1 bg-zinc-950 relative flex items-center justify-center overflow-hidden">
                 <!-- PDF Loading Overlay -->
-                <div id="pdf-loading" class="absolute inset-0 bg-zinc-950/80 backdrop-blur-sm z-10 hidden flex flex-col items-center justify-center gap-2">
-                    <div class="h-7 w-7 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                    <p class="text-xs text-zinc-300 font-medium">Compiling Typst Document...</p>
+                <div id="pdf-loading" class="absolute inset-0 bg-zinc-950/85 backdrop-blur-sm z-10 hidden flex flex-col items-center justify-center gap-3">
+                    <div class="h-8 w-8 border-3 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
+                    <p class="text-xs text-zinc-200 font-semibold tracking-wide">Compiling Typst Document...</p>
                 </div>
 
                 <!-- PDF Embedded Viewer -->
@@ -261,37 +272,37 @@
     </main>
 
     <!-- Version Creation Modal -->
-    <div id="version-modal" class="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm hidden flex items-center justify-center">
-        <div class="bg-zinc-900 border border-zinc-800 rounded p-5 max-w-md w-full mx-4 shadow-2xl space-y-3">
+    <div id="version-modal" class="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm hidden flex items-center justify-center">
+        <div class="bg-zinc-900 border border-zinc-800 rounded-lg p-5 max-w-md w-full mx-4 shadow-2xl space-y-4">
             <h3 class="text-base font-bold text-white">Create New Resume Version</h3>
-            <p class="text-xs text-zinc-400">Enter a short version identifier (e.g. <code class="text-emerald-400 font-mono">swe</code>, <code class="text-emerald-400 font-mono">pm</code>, <code class="text-emerald-400 font-mono">devops</code>). It will clone your current resume as a starting point.</p>
+            <p class="text-xs text-zinc-400">Enter a short version identifier (e.g. <code class="text-emerald-400 font-mono">swe</code>, <code class="text-emerald-400 font-mono">pm</code>, <code class="text-emerald-400 font-mono">devops</code>). It will clone your current resume data.</p>
             <input 
                 type="text" 
                 id="version-name-input" 
                 placeholder="Version name (e.g. swe)" 
-                class="w-full px-3.5 py-2 bg-zinc-950 border border-zinc-800 rounded text-xs text-white placeholder-zinc-500 outline-none focus:border-zinc-400">
+                class="w-full px-3.5 py-2 bg-zinc-950 border border-zinc-800 rounded-md text-xs text-white placeholder-zinc-500 outline-none focus:border-emerald-500">
             <div class="flex justify-end gap-2 pt-2">
-                <button id="version-cancel-btn" class="px-3.5 py-1.5 text-xs bg-zinc-800 hover:bg-zinc-700 text-zinc-200 rounded">Cancel</button>
-                <button id="version-create-btn" class="px-3.5 py-1.5 text-xs bg-emerald-600 hover:bg-emerald-500 text-white font-medium rounded">Create Version</button>
+                <button id="version-cancel-btn" class="px-3.5 py-1.5 text-xs bg-zinc-800 hover:bg-zinc-700 text-zinc-200 font-medium rounded-md transition-colors">Cancel</button>
+                <button id="version-create-btn" class="px-3.5 py-1.5 text-xs bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-md transition-colors shadow">Create Version</button>
             </div>
         </div>
     </div>
 
     <!-- Commit Modal -->
-    <div id="commit-modal" class="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm hidden flex items-center justify-center">
-        <div class="bg-zinc-900 border border-zinc-800 rounded p-5 max-w-md w-full mx-4 shadow-2xl space-y-3">
+    <div id="commit-modal" class="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm hidden flex items-center justify-center">
+        <div class="bg-zinc-900 border border-zinc-800 rounded-lg p-5 max-w-md w-full mx-4 shadow-2xl space-y-4">
             <h3 class="text-base font-bold text-white">Push Changes to GitHub</h3>
-            <p class="text-xs text-zinc-400">Commit and push updated resume JSON back to main repository branch.</p>
+            <p class="text-xs text-zinc-400">Commit and push updated resume JSON back to the main repository branch.</p>
             
             <input 
                 type="text" 
                 id="commit-message-input" 
                 placeholder="Commit message (e.g. Update resume skills section)" 
-                class="w-full px-3.5 py-2 bg-zinc-950 border border-zinc-800 rounded text-xs text-white placeholder-zinc-500 outline-none focus:border-zinc-400">
+                class="w-full px-3.5 py-2 bg-zinc-950 border border-zinc-800 rounded-md text-xs text-white placeholder-zinc-500 outline-none focus:border-emerald-500">
             
             <div class="flex justify-end gap-2 pt-2">
-                <button id="commit-cancel-btn" class="px-3.5 py-1.5 text-xs bg-zinc-800 hover:bg-zinc-700 text-zinc-200 rounded">Cancel</button>
-                <button id="commit-confirm-btn" class="px-3.5 py-1.5 text-xs bg-emerald-600 hover:bg-emerald-500 text-white font-medium rounded">Push Commit</button>
+                <button id="commit-cancel-btn" class="px-3.5 py-1.5 text-xs bg-zinc-800 hover:bg-zinc-700 text-zinc-200 font-medium rounded-md transition-colors">Cancel</button>
+                <button id="commit-confirm-btn" class="px-3.5 py-1.5 text-xs bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-md transition-colors shadow">Push Commit</button>
             </div>
         </div>
     </div>
@@ -300,8 +311,10 @@
     <div id="toast-container" class="fixed top-4 right-4 z-50 flex flex-col gap-2 pointer-events-none"></div>
 
     <script>
-        // --- UI State Management ---
+        // --- UI State & Elements ---
         let currentVersion = 'default';
+        let currentPdfBlobUrl = null;
+
         const versionSelect = document.getElementById('version-select');
         const newVersionBtn = document.getElementById('new-version-btn');
         const versionModal = document.getElementById('version-modal');
@@ -318,19 +331,39 @@
         const refreshPdfBtn = document.getElementById('refresh-pdf-btn');
         const downloadPdfBtn = document.getElementById('download-pdf-btn');
         const loadJsonBtn = document.getElementById('load-json-btn');
+        const saveJsonBtn = document.getElementById('save-json-btn');
+        const formatJsonBtn = document.getElementById('format-json-btn');
         const jsonTextarea = document.getElementById('json-textarea');
+        const jsonSyntaxBadge = document.getElementById('json-syntax-badge');
+        const toggleJdBtn = document.getElementById('toggle-jd-btn');
+        const jdContainer = document.getElementById('jd-container');
 
         // Toast Helper
         function showToast(message, type = 'info') {
             const toast = document.createElement('div');
-            toast.className = `px-3.5 py-2.5 rounded shadow-lg backdrop-blur-sm text-xs font-medium border transition-all duration-300 pointer-events-auto ${
-                type === 'success' ? 'bg-emerald-950/90 text-emerald-200 border-emerald-800' :
-                type === 'error' ? 'bg-red-950/90 text-red-200 border-red-800' :
-                'bg-zinc-900/90 text-zinc-200 border-zinc-700'
+            toast.className = `px-4 py-2.5 rounded-md shadow-xl backdrop-blur-md text-xs font-semibold border transition-all duration-300 pointer-events-auto flex items-center gap-2 ${
+                type === 'success' ? 'bg-emerald-950/95 text-emerald-200 border-emerald-700/80' :
+                type === 'error' ? 'bg-red-950/95 text-red-200 border-red-700/80' :
+                'bg-zinc-900/95 text-zinc-200 border-zinc-700'
             }`;
             toast.textContent = message;
             document.getElementById('toast-container').appendChild(toast);
-            setTimeout(() => toast.remove(), 4000);
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-x-2');
+                setTimeout(() => toast.remove(), 300);
+            }, 3500);
+        }
+
+        // Safe PDF Source Updater with Memory Cleanup
+        function updatePdfSource(srcUrl) {
+            if (currentPdfBlobUrl && currentPdfBlobUrl !== srcUrl) {
+                URL.revokeObjectURL(currentPdfBlobUrl);
+                currentPdfBlobUrl = null;
+            }
+            if (srcUrl && srcUrl.startsWith('blob:')) {
+                currentPdfBlobUrl = srcUrl;
+            }
+            pdfFrame.src = srcUrl;
         }
 
         // --- Version Management ---
@@ -351,7 +384,8 @@
 
         function updatePdfView() {
             pdfLoading.classList.remove('hidden');
-            pdfFrame.src = `/api/pdf?version=${encodeURIComponent(currentVersion)}&t=${Date.now()}`;
+            const pdfUrl = `/api/pdf?version=${encodeURIComponent(currentVersion)}&t=${Date.now()}`;
+            updatePdfSource(pdfUrl);
             downloadPdfBtn.href = `/api/pdf?version=${encodeURIComponent(currentVersion)}`;
             setTimeout(() => pdfLoading.classList.add('hidden'), 800);
         }
@@ -366,11 +400,10 @@
         newVersionBtn.addEventListener('click', () => {
             versionNameInput.value = '';
             versionModal.classList.remove('hidden');
+            versionNameInput.focus();
         });
 
-        versionCancelBtn.addEventListener('click', () => {
-            versionModal.classList.add('hidden');
-        });
+        versionCancelBtn.addEventListener('click', () => versionModal.classList.add('hidden'));
 
         versionCreateBtn.addEventListener('click', async () => {
             const name = versionNameInput.value.trim().toLowerCase().replace(/[^a-z0-9_-]/g, '');
@@ -381,9 +414,14 @@
             versionModal.classList.add('hidden');
             currentVersion = name;
             
-            // Auto-bootstrap new version by saving current resume data to new version
             try {
-                const currentData = jsonTextarea.value ? JSON.parse(jsonTextarea.value) : {};
+                let currentData = {};
+                try {
+                    currentData = jsonTextarea.value ? JSON.parse(jsonTextarea.value) : {};
+                } catch (e) {
+                    currentData = {};
+                }
+                
                 await fetch(`/api/save?version=${encodeURIComponent(currentVersion)}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -401,19 +439,36 @@
 
         // Tab Switching
         tabAiBtn.addEventListener('click', () => {
-            tabAiBtn.className = 'px-3.5 py-2 text-xs font-medium border-b-2 border-white text-white transition-colors';
-            tabJsonBtn.className = 'px-3.5 py-2 text-xs font-medium border-b-2 border-transparent text-zinc-400 hover:text-zinc-200 transition-colors';
+            tabAiBtn.className = 'px-4 py-2 text-xs font-semibold border-b-2 border-emerald-400 text-emerald-400 transition-colors flex items-center gap-1.5';
+            tabJsonBtn.className = 'px-4 py-2 text-xs font-semibold border-b-2 border-transparent text-zinc-400 hover:text-zinc-200 transition-colors flex items-center gap-1.5';
             tabAiContent.classList.remove('hidden');
             tabJsonContent.classList.add('hidden');
         });
 
         tabJsonBtn.addEventListener('click', () => {
-            tabJsonBtn.className = 'px-3.5 py-2 text-xs font-medium border-b-2 border-white text-white transition-colors';
-            tabAiBtn.className = 'px-3.5 py-2 text-xs font-medium border-b-2 border-transparent text-zinc-400 hover:text-zinc-200 transition-colors';
+            tabJsonBtn.className = 'px-4 py-2 text-xs font-semibold border-b-2 border-emerald-400 text-emerald-400 transition-colors flex items-center gap-1.5';
+            tabAiBtn.className = 'px-4 py-2 text-xs font-semibold border-b-2 border-transparent text-zinc-400 hover:text-zinc-200 transition-colors flex items-center gap-1.5';
             tabJsonContent.classList.remove('hidden');
             tabAiContent.classList.add('hidden');
             fetchJsonData();
         });
+
+        // Toggle Job Description Section
+        if (toggleJdBtn && jdContainer) {
+            toggleJdBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                const isHidden = jdContainer.classList.contains('hidden');
+                if (isHidden) {
+                    jdContainer.classList.remove('hidden');
+                    toggleJdBtn.textContent = '− Hide Job Description';
+                    toggleJdBtn.classList.add('text-emerald-400');
+                } else {
+                    jdContainer.classList.add('hidden');
+                    toggleJdBtn.textContent = '+ Add Job Description (Auto-Tailor)';
+                    toggleJdBtn.classList.remove('text-emerald-400');
+                }
+            });
+        }
 
         // Toggle BYOK Settings
         const toggleByokBtn = document.getElementById('toggle-byok-btn');
@@ -421,28 +476,52 @@
         if (toggleByokBtn && byokContainer) {
             toggleByokBtn.addEventListener('click', (e) => {
                 e.preventDefault();
-                e.stopPropagation();
                 byokContainer.classList.toggle('hidden');
-            });
-            byokContainer.addEventListener('click', (e) => {
-                e.stopPropagation();
             });
         }
 
-
-        // Refresh PDF
+        // Refresh PDF Button
         refreshPdfBtn.addEventListener('click', () => {
             updatePdfView();
             showToast('PDF Preview Refreshed', 'info');
         });
 
-        // Fetch JSON Data
+        // Fetch Fresh JSON Data Button
+        if (loadJsonBtn) {
+            loadJsonBtn.addEventListener('click', async () => {
+                await fetchJsonData();
+                showToast('Refreshed JSON resume data', 'info');
+            });
+        }
+
+        // Format JSON Button
+        if (formatJsonBtn) {
+            formatJsonBtn.addEventListener('click', () => {
+                try {
+                    const parsed = JSON.parse(jsonTextarea.value);
+                    jsonTextarea.value = JSON.stringify(parsed, null, 2);
+                    if (jsonSyntaxBadge) {
+                        jsonSyntaxBadge.textContent = 'Valid JSON';
+                        jsonSyntaxBadge.className = 'text-[11px] font-mono px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20';
+                    }
+                    showToast('JSON formatted successfully', 'success');
+                } catch (e) {
+                    showToast('Cannot format invalid JSON: ' + (e instanceof Error ? e.message : String(e)), 'error');
+                }
+            });
+        }
+
+        // Fetch JSON Data Function
         async function fetchJsonData() {
             try {
                 const res = await fetch(`/api/resume?version=${encodeURIComponent(currentVersion)}`);
                 if (res.ok) {
                     const data = await res.json();
                     jsonTextarea.value = JSON.stringify(data, null, 2);
+                    if (jsonSyntaxBadge) {
+                        jsonSyntaxBadge.textContent = 'Valid JSON';
+                        jsonSyntaxBadge.className = 'text-[11px] font-mono px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20';
+                    }
                 }
             } catch (e) {
                 console.error(e);
@@ -453,11 +532,42 @@
         fetchVersions();
         fetchJsonData();
 
-        // --- Live Real-Time Auto-Sync ---
+        // Support Tab key inside JSON Textarea
+        jsonTextarea.addEventListener('keydown', (e) => {
+            if (e.key === 'Tab') {
+                e.preventDefault();
+                const start = jsonTextarea.selectionStart;
+                const end = jsonTextarea.selectionEnd;
+                jsonTextarea.value = jsonTextarea.value.substring(0, start) + '  ' + jsonTextarea.value.substring(end);
+                jsonTextarea.selectionStart = jsonTextarea.selectionEnd = start + 2;
+            }
+        });
+
+        // --- Live Real-Time Auto-Sync & Real-Time Syntax Validation ---
         let debounceTimer = null;
         jsonTextarea.addEventListener('input', () => {
             clearTimeout(debounceTimer);
             const statusBadge = document.getElementById('pdf-status-badge');
+            
+            // Validate JSON syntax on every keystroke
+            try {
+                JSON.parse(jsonTextarea.value);
+                if (jsonSyntaxBadge) {
+                    jsonSyntaxBadge.textContent = 'Valid JSON';
+                    jsonSyntaxBadge.className = 'text-[11px] font-mono px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20';
+                }
+            } catch (err) {
+                if (jsonSyntaxBadge) {
+                    jsonSyntaxBadge.textContent = 'Invalid JSON';
+                    jsonSyntaxBadge.className = 'text-[11px] font-mono px-2 py-0.5 rounded bg-red-500/10 text-red-400 border border-red-500/20';
+                }
+                if (statusBadge) {
+                    statusBadge.textContent = 'Invalid JSON Syntax';
+                    statusBadge.className = 'text-[11px] text-red-400 font-mono';
+                }
+                return;
+            }
+
             if (statusBadge) {
                 statusBadge.textContent = 'Syncing Live Changes...';
                 statusBadge.className = 'text-[11px] text-amber-400 font-mono animate-pulse';
@@ -474,7 +584,7 @@
                     if (res.ok) {
                         const blob = await res.blob();
                         const blobUrl = URL.createObjectURL(blob);
-                        pdfFrame.src = blobUrl;
+                        updatePdfSource(blobUrl);
                         if (statusBadge) {
                             statusBadge.textContent = 'Live Sync Active (Sub-15ms)';
                             statusBadge.className = 'text-[11px] text-emerald-400 font-mono';
@@ -482,14 +592,13 @@
                     }
                 } catch (e) {
                     if (statusBadge) {
-                        statusBadge.textContent = 'Invalid JSON Syntax';
+                        statusBadge.textContent = 'Preview Update Failed';
                         statusBadge.className = 'text-[11px] text-red-400 font-mono';
                     }
                 }
             }, 500);
         });
 
-        const saveJsonBtn = document.getElementById('save-json-btn');
         if (saveJsonBtn) {
             saveJsonBtn.addEventListener('click', async () => {
                 try {
@@ -508,7 +617,7 @@
                         showToast('Failed to save JSON', 'error');
                     }
                 } catch (e) {
-                    showToast('Invalid JSON: ' + (e instanceof Error ? e.message : String(e)), 'error');
+                    showToast('Invalid JSON syntax: ' + (e instanceof Error ? e.message : String(e)), 'error');
                 } finally {
                     pdfLoading.classList.add('hidden');
                 }
@@ -534,6 +643,11 @@
                     model_id: modelId
                 };
 
+                // Forward headers for custom BYOK providers
+                if (apiKey) event.detail.headers['X-API-Key'] = apiKey;
+                if (provider) event.detail.headers['X-LLM-Provider'] = provider;
+                if (modelId) event.detail.headers['X-Model-ID'] = modelId;
+
                 document.getElementById('ai-status-msg').textContent = isAgent ? `Running Resume Agent (${provider.toUpperCase()})...` : 'Processing with LLM...';
                 const instruction = document.getElementById('instruction').value;
                 const job_description = document.getElementById('job_description').value;
@@ -553,7 +667,7 @@
                         if (response.status === 'success' || response.data) {
                             showToast(`Resume ('${currentVersion}') updated successfully!`, 'success');
                             if (response.pdf_base64) {
-                                pdfFrame.src = `data:application/pdf;base64,${response.pdf_base64}`;
+                                updatePdfSource(`data:application/pdf;base64,${response.pdf_base64}`);
                             } else {
                                 updatePdfView();
                             }
@@ -601,12 +715,16 @@
         const commitModal = document.getElementById('commit-modal');
         const commitCancelBtn = document.getElementById('commit-cancel-btn');
         const commitConfirmBtn = document.getElementById('commit-confirm-btn');
+        const commitMessageInput = document.getElementById('commit-message-input');
 
-        commitOpenBtn.addEventListener('click', () => commitModal.classList.remove('hidden'));
+        commitOpenBtn.addEventListener('click', () => {
+            commitModal.classList.remove('hidden');
+            commitMessageInput.focus();
+        });
         commitCancelBtn.addEventListener('click', () => commitModal.classList.add('hidden'));
 
         commitConfirmBtn.addEventListener('click', async () => {
-            const message = document.getElementById('commit-message-input').value.trim() || `Update resume (${currentVersion}) via Serverless Resume Editor`;
+            const message = commitMessageInput.value.trim() || `Update resume (${currentVersion}) via Serverless Resume Editor`;
             commitConfirmBtn.disabled = true;
             commitConfirmBtn.textContent = 'Pushing...';
             try {
@@ -627,6 +745,32 @@
             } finally {
                 commitConfirmBtn.disabled = false;
                 commitConfirmBtn.textContent = 'Push Commit';
+            }
+        });
+
+        // Modal Enter / Escape keyboard shortcuts
+        versionNameInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                versionCreateBtn.click();
+            } else if (e.key === 'Escape') {
+                versionModal.classList.add('hidden');
+            }
+        });
+
+        commitMessageInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                commitConfirmBtn.click();
+            } else if (e.key === 'Escape') {
+                commitModal.classList.add('hidden');
+            }
+        });
+
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                versionModal.classList.add('hidden');
+                commitModal.classList.add('hidden');
             }
         });
     </script>
