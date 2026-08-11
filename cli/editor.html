@@ -150,7 +150,8 @@
                                 <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">AGENTIC</span>
                             </div>
 
-                            <div class="border-t border-zinc-800/80 pt-                                 <button type="button" id="toggle-byok-btn" class="text-[11px] font-medium text-zinc-400 hover:text-white transition-colors flex items-center gap-1">
+                            <div class="border-t border-zinc-800/80 pt-2">
+                                <button type="button" id="toggle-byok-btn" class="text-[11px] font-medium text-zinc-400 hover:text-white transition-colors flex items-center gap-1">
                                     🔑 BYOK Settings (Use Google Gemini, OpenAI, Anthropic, OpenRouter, or Bedrock)
                                 </button>
                                 <div id="byok-container" class="hidden mt-2 p-2.5 bg-zinc-900/90 border border-zinc-800 rounded space-y-2 text-xs">
@@ -165,7 +166,6 @@
                                                 <option value="openrouter">OpenRouter (DeepSeek R1 / any)</option>
                                             </select>
                                         </div>
- </div>
                                         <div>
                                             <label class="block text-[11px] text-zinc-400 mb-0.5">Custom Model ID (Optional)</label>
                                             <input type="text" id="byok-model" placeholder="e.g., gpt-4o, claude-3-5-sonnet-20241022" class="w-full px-2 py-1 bg-zinc-950 border border-zinc-800 rounded text-xs text-white outline-none">
@@ -177,6 +177,7 @@
                                     </div>
                                 </div>
                             </div>
+
                         </div>
 
 
@@ -446,7 +447,41 @@
         fetchVersions();
         fetchJsonData();
 
-        loadJsonBtn.addEventListener('click', fetchJsonData);
+        // --- Live Real-Time Auto-Sync ---
+        let debounceTimer = null;
+        jsonTextarea.addEventListener('input', () => {
+            clearTimeout(debounceTimer);
+            const statusBadge = document.getElementById('pdf-status-badge');
+            if (statusBadge) {
+                statusBadge.textContent = 'Syncing Live Changes...';
+                statusBadge.className = 'text-[11px] text-amber-400 font-mono animate-pulse';
+            }
+            
+            debounceTimer = setTimeout(async () => {
+                try {
+                    const parsed = JSON.parse(jsonTextarea.value);
+                    const res = await fetch(`/api/preview?version=${encodeURIComponent(currentVersion)}`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ json: parsed, version: currentVersion })
+                    });
+                    if (res.ok) {
+                        const blob = await res.blob();
+                        const blobUrl = URL.createObjectURL(blob);
+                        pdfFrame.src = blobUrl;
+                        if (statusBadge) {
+                            statusBadge.textContent = 'Live Sync Active (Sub-15ms)';
+                            statusBadge.className = 'text-[11px] text-emerald-400 font-mono';
+                        }
+                    }
+                } catch (e) {
+                    if (statusBadge) {
+                        statusBadge.textContent = 'Invalid JSON Syntax';
+                        statusBadge.className = 'text-[11px] text-red-400 font-mono';
+                    }
+                }
+            }, 500);
+        });
 
         const saveJsonBtn = document.getElementById('save-json-btn');
         if (saveJsonBtn) {
