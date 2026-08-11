@@ -192,9 +192,28 @@ def ensure_typst_binary():
 
     return "typst"
 
-def compile_typst(resume_data):
+def get_available_styles():
+    styles = set(["template", "modern", "minimal", "classic"])
+    search_dirs = ["./templates", os.path.join(os.path.dirname(__file__), "templates"), "."]
+    for d in search_dirs:
+        if os.path.exists(d):
+            try:
+                for fname in os.listdir(d):
+                    if fname.endswith(".typ"):
+                        s = fname[:-4]
+                        if s:
+                            styles.add(s)
+            except Exception:
+                pass
+    return sorted(list(styles))
+
+def compile_typst(resume_data, style="template"):
     import tempfile
     import shutil
+
+    clean_style = "".join(c for c in style if c.isalnum() or c in ("_", "-")).lower() if style else "template"
+    if not clean_style:
+        clean_style = "template"
 
     with tempfile.TemporaryDirectory() as work_dir:
         json_path = os.path.join(work_dir, "resume.json")
@@ -210,6 +229,8 @@ def compile_typst(resume_data):
             json.dump(resume_data, f, indent=2)
 
         template_candidates = [
+            f"./templates/{clean_style}.typ",
+            os.path.join(os.path.dirname(__file__), "templates", f"{clean_style}.typ"),
             "./templates/template.typ",
             os.path.join(os.path.dirname(__file__), "templates", "template.typ"),
             os.path.join(os.path.dirname(__file__), "template.typ"),
@@ -222,7 +243,7 @@ def compile_typst(resume_data):
                 break
 
         if not template_src:
-            raise Exception("template.typ not found in templates/ or root")
+            raise Exception(f"Template '{clean_style}.typ' not found in templates/ or root")
 
         template_dst = os.path.join(work_dir, "template.typ")
         shutil.copyfile(template_src, template_dst)
@@ -270,6 +291,7 @@ def handler(event, context):
         import urllib.parse
         query_params = {k: v[0] if len(v) == 1 else v for k, v in urllib.parse.parse_qs(event["rawQueryString"]).items()}
     version = query_params.get("version") or (body.get("version") if isinstance(body, dict) else "default") or "default"
+    style = query_params.get("style") or (body.get("style") if isinstance(body, dict) else "template") or "template"
 
     try:
         # GET /health
@@ -280,6 +302,10 @@ def handler(event, context):
         elif path == "/versions" and http_method == "GET":
             return create_response(200, {"versions": get_available_versions()})
 
+        # GET /styles
+        elif path == "/styles" and http_method == "GET":
+            return create_response(200, {"styles": get_available_styles()})
+
         # GET /resume
         elif path == "/resume" and http_method == "GET":
             data = get_current_resume(version)
@@ -288,7 +314,7 @@ def handler(event, context):
         # GET /pdf
         elif path == "/pdf" and http_method == "GET":
             data = get_current_resume(version)
-            pdf_bytes = compile_typst(data)
+            pdf_bytes = compile_typst(data, style)
             return {
                 "statusCode": 200,
                 "headers": {
@@ -312,7 +338,7 @@ def handler(event, context):
             if not resume_data:
                 resume_data = get_current_resume(version)
 
-            pdf_bytes = compile_typst(resume_data)
+            pdf_bytes = compile_typst(resume_data, style)
             return {
                 "statusCode": 200,
                 "headers": {
@@ -516,7 +542,7 @@ def handler(event, context):
                 except Exception as s3_err:
                     print(f"Warning: Failed to persist updated resume to S3: {s3_err}")
 
-            pdf_bytes = compile_typst(updated_resume)
+            pdf_bytes = compile_typst(updated_resume, style)
 
             return create_response(200, {
                 "status": "success",

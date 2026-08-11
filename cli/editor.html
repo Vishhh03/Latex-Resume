@@ -53,13 +53,23 @@
                 <p class="text-[11px] text-zinc-400">AWS Lambda & Amazon Bedrock AI</p>
             </div>
 
-            <!-- Version Switcher -->
+            <!-- Profile Switcher -->
             <div class="ml-3 flex items-center gap-2 bg-zinc-950/80 px-3 py-1 border border-zinc-800 rounded-md text-xs">
-                <span class="text-zinc-400 font-medium">Version:</span>
+                <span class="text-zinc-400 font-medium">Profile:</span>
                 <select id="version-select" class="bg-transparent text-white font-semibold outline-none cursor-pointer">
                     <option value="default" class="bg-zinc-900 text-white">default</option>
                 </select>
-                <button id="new-version-btn" title="Create New Version (+)" class="text-emerald-400 hover:text-emerald-300 ml-1 font-bold text-sm leading-none transition-colors">+</button>
+                <button id="new-version-btn" title="Create New Profile (+)" class="text-emerald-400 hover:text-emerald-300 ml-1 font-bold text-sm leading-none transition-colors">+</button>
+            </div>
+
+            <!-- Style / Template Switcher -->
+            <div class="flex items-center gap-2 bg-zinc-950/80 px-3 py-1 border border-zinc-800 rounded-md text-xs">
+                <span class="text-zinc-400 font-medium">Style:</span>
+                <select id="style-select" class="bg-transparent text-white font-semibold outline-none cursor-pointer">
+                    <option value="template" class="bg-zinc-900 text-white">Modern Blue</option>
+                    <option value="minimal" class="bg-zinc-900 text-white">Minimalist</option>
+                    <option value="classic" class="bg-zinc-900 text-white">Classic Emerald</option>
+                </select>
             </div>
         </div>
 
@@ -271,19 +281,19 @@
 
     </main>
 
-    <!-- Version Creation Modal -->
+    <!-- Profile Creation Modal -->
     <div id="version-modal" class="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm hidden flex items-center justify-center">
         <div class="bg-zinc-900 border border-zinc-800 rounded-lg p-5 max-w-md w-full mx-4 shadow-2xl space-y-4">
-            <h3 class="text-base font-bold text-white">Create New Resume Version</h3>
-            <p class="text-xs text-zinc-400">Enter a short version identifier (e.g. <code class="text-emerald-400 font-mono">swe</code>, <code class="text-emerald-400 font-mono">pm</code>, <code class="text-emerald-400 font-mono">devops</code>). It will clone your current resume data.</p>
+            <h3 class="text-base font-bold text-white">Create New Resume Profile</h3>
+            <p class="text-xs text-zinc-400">Enter a target profile identifier (e.g. <code class="text-emerald-400 font-mono">swe</code>, <code class="text-emerald-400 font-mono">pm</code>, <code class="text-emerald-400 font-mono">devops</code>). It will clone your current resume data.</p>
             <input 
                 type="text" 
                 id="version-name-input" 
-                placeholder="Version name (e.g. swe)" 
+                placeholder="Profile identifier (e.g. swe)" 
                 class="w-full px-3.5 py-2 bg-zinc-950 border border-zinc-800 rounded-md text-xs text-white placeholder-zinc-500 outline-none focus:border-emerald-500">
             <div class="flex justify-end gap-2 pt-2">
                 <button id="version-cancel-btn" class="px-3.5 py-1.5 text-xs bg-zinc-800 hover:bg-zinc-700 text-zinc-200 font-medium rounded-md transition-colors">Cancel</button>
-                <button id="version-create-btn" class="px-3.5 py-1.5 text-xs bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-md transition-colors shadow">Create Version</button>
+                <button id="version-create-btn" class="px-3.5 py-1.5 text-xs bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-md transition-colors shadow">Create Profile</button>
             </div>
         </div>
     </div>
@@ -313,9 +323,11 @@
     <script>
         // --- UI State & Elements ---
         let currentVersion = 'default';
+        let currentStyle = 'template';
         let currentPdfBlobUrl = null;
 
         const versionSelect = document.getElementById('version-select');
+        const styleSelect = document.getElementById('style-select');
         const newVersionBtn = document.getElementById('new-version-btn');
         const versionModal = document.getElementById('version-modal');
         const versionCancelBtn = document.getElementById('version-cancel-btn');
@@ -366,7 +378,7 @@
             pdfFrame.src = srcUrl;
         }
 
-        // --- Version Management ---
+        // --- Version & Style Management ---
         async function fetchVersions() {
             try {
                 const res = await fetch('/api/versions');
@@ -384,9 +396,9 @@
 
         function updatePdfView() {
             pdfLoading.classList.remove('hidden');
-            const pdfUrl = `/api/pdf?version=${encodeURIComponent(currentVersion)}&t=${Date.now()}`;
+            const pdfUrl = `/api/pdf?version=${encodeURIComponent(currentVersion)}&style=${encodeURIComponent(currentStyle)}&t=${Date.now()}`;
             updatePdfSource(pdfUrl);
-            downloadPdfBtn.href = `/api/pdf?version=${encodeURIComponent(currentVersion)}`;
+            downloadPdfBtn.href = `/api/pdf?version=${encodeURIComponent(currentVersion)}&style=${encodeURIComponent(currentStyle)}`;
             setTimeout(() => pdfLoading.classList.add('hidden'), 800);
         }
 
@@ -394,8 +406,16 @@
             currentVersion = e.target.value;
             fetchJsonData();
             updatePdfView();
-            showToast(`Switched to resume version '${currentVersion}'`, 'info');
+            showToast(`Switched to resume profile '${currentVersion}'`, 'info');
         });
+
+        if (styleSelect) {
+            styleSelect.addEventListener('change', (e) => {
+                currentStyle = e.target.value;
+                updatePdfView();
+                showToast(`Applied resume style '${currentStyle}'`, 'info');
+            });
+        }
 
         newVersionBtn.addEventListener('click', () => {
             versionNameInput.value = '';
@@ -576,10 +596,10 @@
             debounceTimer = setTimeout(async () => {
                 try {
                     const parsed = JSON.parse(jsonTextarea.value);
-                    const res = await fetch(`/api/preview?version=${encodeURIComponent(currentVersion)}`, {
+                    const res = await fetch(`/api/preview?version=${encodeURIComponent(currentVersion)}&style=${encodeURIComponent(currentStyle)}`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ json: parsed, version: currentVersion })
+                        body: JSON.stringify({ json: parsed, version: currentVersion, style: currentStyle })
                     });
                     if (res.ok) {
                         const blob = await res.blob();
@@ -653,7 +673,7 @@
                 const job_description = document.getElementById('job_description').value;
                 event.detail.headers['Content-Type'] = 'application/json';
                 event.detail.parameters = {};
-                event.detail.body = JSON.stringify({ instruction, job_description, agent_mode: isAgent, byok, version: currentVersion });
+                event.detail.body = JSON.stringify({ instruction, job_description, agent_mode: isAgent, byok, version: currentVersion, style: currentStyle });
             }
         });
 
