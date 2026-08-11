@@ -419,10 +419,16 @@
         const toggleByokBtn = document.getElementById('toggle-byok-btn');
         const byokContainer = document.getElementById('byok-container');
         if (toggleByokBtn && byokContainer) {
-            toggleByokBtn.addEventListener('click', () => {
+            toggleByokBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
                 byokContainer.classList.toggle('hidden');
             });
+            byokContainer.addEventListener('click', (e) => {
+                e.stopPropagation();
+            });
         }
+
 
         // Refresh PDF
         refreshPdfBtn.addEventListener('click', () => {
