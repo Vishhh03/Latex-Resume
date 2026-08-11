@@ -98,12 +98,16 @@
         <section class="w-1/2 flex flex-col bg-zinc-900/90 border border-zinc-800/90 rounded-lg overflow-hidden shadow-2xl">
             
             <!-- Tab Navigation Header -->
-            <div class="flex items-center border-b border-zinc-800 bg-zinc-900/80 px-3 pt-2 gap-1 shrink-0">
-                <button id="tab-ai-btn" class="px-4 py-2 text-xs font-semibold border-b-2 border-emerald-400 text-emerald-400 transition-colors flex items-center gap-1.5">
+            <div class="flex items-center border-b border-zinc-800 bg-zinc-900/80 px-3 pt-2 gap-1 shrink-0 overflow-x-auto">
+                <button id="tab-visual-btn" class="px-3.5 py-2 text-xs font-semibold border-b-2 border-emerald-400 text-emerald-400 transition-colors flex items-center gap-1.5 shrink-0">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                    Visual Live Editor
+                </button>
+                <button id="tab-ai-btn" class="px-3.5 py-2 text-xs font-semibold border-b-2 border-transparent text-zinc-400 hover:text-zinc-200 transition-colors flex items-center gap-1.5 shrink-0">
                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
                     AI Prompt Editor
                 </button>
-                <button id="tab-json-btn" class="px-4 py-2 text-xs font-semibold border-b-2 border-transparent text-zinc-400 hover:text-zinc-200 transition-colors flex items-center gap-1.5">
+                <button id="tab-json-btn" class="px-3.5 py-2 text-xs font-semibold border-b-2 border-transparent text-zinc-400 hover:text-zinc-200 transition-colors flex items-center gap-1.5 shrink-0">
                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path></svg>
                     Raw JSON Data
                 </button>
@@ -111,9 +115,92 @@
 
             <!-- Tab Content Area -->
             <div class="flex-1 overflow-y-auto p-5 space-y-4">
-                
+
+                <!-- Visual Live Editor Tab -->
+                <div id="tab-visual-content" class="space-y-4">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h2 class="text-base font-bold text-white mb-0.5">Visual Live Resume Editor</h2>
+                            <p class="text-xs text-zinc-400">Edit fields directly below to update the PDF preview live in real-time.</p>
+                        </div>
+                        <button id="vf-save-btn" class="px-3 py-1 text-xs bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-md transition-colors shadow">
+                            Save Changes
+                        </button>
+                    </div>
+
+                    <!-- Personal Details -->
+                    <div class="p-4 bg-zinc-950/90 border border-zinc-800/90 rounded-md space-y-3 shadow-sm">
+                        <h3 class="text-xs font-bold text-emerald-400 uppercase tracking-wider">Personal Information</h3>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-[11px] font-medium text-zinc-400 mb-1">Full Name</label>
+                                <input type="text" id="vf-name" class="vf-input w-full px-3 py-1.5 bg-zinc-900 border border-zinc-800 rounded text-xs text-white outline-none focus:border-emerald-500">
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-medium text-zinc-400 mb-1">Job Title</label>
+                                <input type="text" id="vf-title" class="vf-input w-full px-3 py-1.5 bg-zinc-900 border border-zinc-800 rounded text-xs text-white outline-none focus:border-emerald-500">
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-medium text-zinc-400 mb-1">Email</label>
+                                <input type="text" id="vf-email" class="vf-input w-full px-3 py-1.5 bg-zinc-900 border border-zinc-800 rounded text-xs text-white outline-none focus:border-emerald-500">
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-medium text-zinc-400 mb-1">Phone</label>
+                                <input type="text" id="vf-phone" class="vf-input w-full px-3 py-1.5 bg-zinc-900 border border-zinc-800 rounded text-xs text-white outline-none focus:border-emerald-500">
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-medium text-zinc-400 mb-1">Location</label>
+                                <input type="text" id="vf-location" class="vf-input w-full px-3 py-1.5 bg-zinc-900 border border-zinc-800 rounded text-xs text-white outline-none focus:border-emerald-500">
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-medium text-zinc-400 mb-1">Website / Portfolio</label>
+                                <input type="text" id="vf-website" class="vf-input w-full px-3 py-1.5 bg-zinc-900 border border-zinc-800 rounded text-xs text-white outline-none focus:border-emerald-500">
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-medium text-zinc-400 mb-1">GitHub</label>
+                                <input type="text" id="vf-github" class="vf-input w-full px-3 py-1.5 bg-zinc-900 border border-zinc-800 rounded text-xs text-white outline-none focus:border-emerald-500">
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-medium text-zinc-400 mb-1">LinkedIn</label>
+                                <input type="text" id="vf-linkedin" class="vf-input w-full px-3 py-1.5 bg-zinc-900 border border-zinc-800 rounded text-xs text-white outline-none focus:border-emerald-500">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-medium text-zinc-400 mb-1">Professional Summary</label>
+                            <textarea id="vf-summary" rows="3" class="vf-input w-full px-3 py-1.5 bg-zinc-900 border border-zinc-800 rounded text-xs text-white outline-none focus:border-emerald-500 resize-none"></textarea>
+                        </div>
+                    </div>
+
+                    <!-- Work Experience -->
+                    <div class="p-4 bg-zinc-950/90 border border-zinc-800/90 rounded-md space-y-3 shadow-sm">
+                        <div class="flex items-center justify-between">
+                            <h3 class="text-xs font-bold text-emerald-400 uppercase tracking-wider">Work Experience</h3>
+                            <button type="button" id="vf-add-work-btn" class="px-2.5 py-1 text-xs bg-zinc-800 hover:bg-zinc-700 text-emerald-400 font-semibold rounded transition-colors">+ Add Job</button>
+                        </div>
+                        <div id="vf-work-list" class="space-y-3"></div>
+                    </div>
+
+                    <!-- Technical Skills -->
+                    <div class="p-4 bg-zinc-950/90 border border-zinc-800/90 rounded-md space-y-3 shadow-sm">
+                        <div class="flex items-center justify-between">
+                            <h3 class="text-xs font-bold text-emerald-400 uppercase tracking-wider">Technical Skills</h3>
+                            <button type="button" id="vf-add-skill-btn" class="px-2.5 py-1 text-xs bg-zinc-800 hover:bg-zinc-700 text-emerald-400 font-semibold rounded transition-colors">+ Add Category</button>
+                        </div>
+                        <div id="vf-skill-list" class="space-y-3"></div>
+                    </div>
+
+                    <!-- Projects -->
+                    <div class="p-4 bg-zinc-950/90 border border-zinc-800/90 rounded-md space-y-3 shadow-sm">
+                        <div class="flex items-center justify-between">
+                            <h3 class="text-xs font-bold text-emerald-400 uppercase tracking-wider">Key Projects</h3>
+                            <button type="button" id="vf-add-project-btn" class="px-2.5 py-1 text-xs bg-zinc-800 hover:bg-zinc-700 text-emerald-400 font-semibold rounded transition-colors">+ Add Project</button>
+                        </div>
+                        <div id="vf-project-list" class="space-y-3"></div>
+                    </div>
+                </div>
+
                 <!-- AI Prompt Tab -->
-                <div id="tab-ai-content" class="space-y-4">
+                <div id="tab-ai-content" class="hidden space-y-4">
                     <div>
                         <h2 class="text-base font-bold text-white mb-0.5 flex items-center gap-2">
                             Update Resume with AI
@@ -457,21 +544,211 @@
             }
         });
 
-        // Tab Switching
-        tabAiBtn.addEventListener('click', () => {
-            tabAiBtn.className = 'px-4 py-2 text-xs font-semibold border-b-2 border-emerald-400 text-emerald-400 transition-colors flex items-center gap-1.5';
-            tabJsonBtn.className = 'px-4 py-2 text-xs font-semibold border-b-2 border-transparent text-zinc-400 hover:text-zinc-200 transition-colors flex items-center gap-1.5';
-            tabAiContent.classList.remove('hidden');
-            tabJsonContent.classList.add('hidden');
+        // --- Tab Switching & Visual Editor Logic ---
+        const tabVisualBtn = document.getElementById('tab-visual-btn');
+        const tabVisualContent = document.getElementById('tab-visual-content');
+        const vfSaveBtn = document.getElementById('vf-save-btn');
+        const vfWorkList = document.getElementById('vf-work-list');
+        const vfSkillList = document.getElementById('vf-skill-list');
+        const vfProjectList = document.getElementById('vf-project-list');
+
+        function activateTab(activeBtn, activeContent) {
+            [tabVisualBtn, tabAiBtn, tabJsonBtn].forEach(btn => {
+                if (btn) btn.className = 'px-3.5 py-2 text-xs font-semibold border-b-2 border-transparent text-zinc-400 hover:text-zinc-200 transition-colors flex items-center gap-1.5 shrink-0';
+            });
+            [tabVisualContent, tabAiContent, tabJsonContent].forEach(content => {
+                if (content) content.classList.add('hidden');
+            });
+
+            if (activeBtn) activeBtn.className = 'px-3.5 py-2 text-xs font-semibold border-b-2 border-emerald-400 text-emerald-400 transition-colors flex items-center gap-1.5 shrink-0';
+            if (activeContent) activeContent.classList.remove('hidden');
+        }
+
+        if (tabVisualBtn) tabVisualBtn.addEventListener('click', () => {
+            activateTab(tabVisualBtn, tabVisualContent);
+            try {
+                const parsed = JSON.parse(jsonTextarea.value);
+                populateVisualEditor(parsed);
+            } catch (e) {}
         });
 
-        tabJsonBtn.addEventListener('click', () => {
-            tabJsonBtn.className = 'px-4 py-2 text-xs font-semibold border-b-2 border-emerald-400 text-emerald-400 transition-colors flex items-center gap-1.5';
-            tabAiBtn.className = 'px-4 py-2 text-xs font-semibold border-b-2 border-transparent text-zinc-400 hover:text-zinc-200 transition-colors flex items-center gap-1.5';
-            tabJsonContent.classList.remove('hidden');
-            tabAiContent.classList.add('hidden');
+        if (tabAiBtn) tabAiBtn.addEventListener('click', () => activateTab(tabAiBtn, tabAiContent));
+        if (tabJsonBtn) tabJsonBtn.addEventListener('click', () => {
+            activateTab(tabJsonBtn, tabJsonContent);
             fetchJsonData();
         });
+
+        let isPopulatingVF = false;
+
+        function populateVisualEditor(data) {
+            if (!data) return;
+            isPopulatingVF = true;
+            try {
+                const basics = data.basics || {};
+                document.getElementById('vf-name').value = basics.name || '';
+                document.getElementById('vf-title').value = basics.title || '';
+                document.getElementById('vf-email').value = basics.email || '';
+                document.getElementById('vf-phone').value = basics.phone || '';
+                document.getElementById('vf-location').value = basics.location || '';
+                document.getElementById('vf-website').value = basics.website || '';
+                document.getElementById('vf-github').value = basics.github || '';
+                document.getElementById('vf-linkedin').value = basics.linkedin || '';
+                document.getElementById('vf-summary').value = basics.summary || '';
+
+                if (vfWorkList) {
+                    vfWorkList.innerHTML = '';
+                    (data.work || []).forEach(w => addWorkItemToVF(w));
+                }
+                if (vfSkillList) {
+                    vfSkillList.innerHTML = '';
+                    (data.skills || []).forEach(s => addSkillItemToVF(s));
+                }
+                if (vfProjectList) {
+                    vfProjectList.innerHTML = '';
+                    (data.projects || []).forEach(p => addProjectItemToVF(p));
+                }
+            } finally {
+                isPopulatingVF = false;
+            }
+        }
+
+        function addWorkItemToVF(w = {}) {
+            if (!vfWorkList) return;
+            const card = document.createElement('div');
+            card.className = 'p-3 bg-zinc-900 border border-zinc-800 rounded-md space-y-2 relative group';
+            card.innerHTML = `
+                <div class="flex items-center justify-between">
+                    <span class="text-[11px] font-bold text-emerald-400 uppercase">Position</span>
+                    <button type="button" class="vf-remove-card text-zinc-500 hover:text-red-400 text-xs font-bold px-1">✕</button>
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                    <input type="text" placeholder="Job Title" class="vf-work-pos vf-input w-full px-2.5 py-1 bg-zinc-950 border border-zinc-800 rounded text-xs text-white outline-none focus:border-emerald-500" value="${w.position || ''}">
+                    <input type="text" placeholder="Company Name" class="vf-work-company vf-input w-full px-2.5 py-1 bg-zinc-950 border border-zinc-800 rounded text-xs text-white outline-none focus:border-emerald-500" value="${w.company || ''}">
+                    <input type="text" placeholder="Start Date (e.g. Jan 2023)" class="vf-work-start vf-input w-full px-2.5 py-1 bg-zinc-950 border border-zinc-800 rounded text-xs text-white outline-none focus:border-emerald-500" value="${w.startDate || ''}">
+                    <input type="text" placeholder="End Date (e.g. Present)" class="vf-work-end vf-input w-full px-2.5 py-1 bg-zinc-950 border border-zinc-800 rounded text-xs text-white outline-none focus:border-emerald-500" value="${w.endDate || ''}">
+                </div>
+                <input type="text" placeholder="Location (e.g. Remote / San Francisco)" class="vf-work-location vf-input w-full px-2.5 py-1 bg-zinc-950 border border-zinc-800 rounded text-xs text-white outline-none focus:border-emerald-500" value="${w.location || ''}">
+                <textarea placeholder="Bullet points (one per line)" rows="3" class="vf-work-highlights vf-input w-full px-2.5 py-1 bg-zinc-950 border border-zinc-800 rounded text-xs text-white outline-none focus:border-emerald-500 resize-none">${(w.highlights || []).join('\n')}</textarea>
+            `;
+            card.querySelector('.vf-remove-card').addEventListener('click', () => {
+                card.remove();
+                syncVFToJSON();
+            });
+            vfWorkList.appendChild(card);
+        }
+
+        function addSkillItemToVF(s = {}) {
+            if (!vfSkillList) return;
+            const card = document.createElement('div');
+            card.className = 'p-3 bg-zinc-900 border border-zinc-800 rounded-md space-y-2 relative group';
+            card.innerHTML = `
+                <div class="flex items-center justify-between">
+                    <span class="text-[11px] font-bold text-emerald-400 uppercase">Skill Category</span>
+                    <button type="button" class="vf-remove-card text-zinc-500 hover:text-red-400 text-xs font-bold px-1">✕</button>
+                </div>
+                <input type="text" placeholder="Category (e.g. Languages / DevOps)" class="vf-skill-name vf-input w-full px-2.5 py-1 bg-zinc-950 border border-zinc-800 rounded text-xs text-white outline-none focus:border-emerald-500" value="${s.name || ''}">
+                <input type="text" placeholder="Keywords (comma separated: Python, Docker, AWS)" class="vf-skill-keywords vf-input w-full px-2.5 py-1 bg-zinc-950 border border-zinc-800 rounded text-xs text-white outline-none focus:border-emerald-500" value="${(s.keywords || []).join(', ')}">
+            `;
+            card.querySelector('.vf-remove-card').addEventListener('click', () => {
+                card.remove();
+                syncVFToJSON();
+            });
+            vfSkillList.appendChild(card);
+        }
+
+        function addProjectItemToVF(p = {}) {
+            if (!vfProjectList) return;
+            const card = document.createElement('div');
+            card.className = 'p-3 bg-zinc-900 border border-zinc-800 rounded-md space-y-2 relative group';
+            card.innerHTML = `
+                <div class="flex items-center justify-between">
+                    <span class="text-[11px] font-bold text-emerald-400 uppercase">Project</span>
+                    <button type="button" class="vf-remove-card text-zinc-500 hover:text-red-400 text-xs font-bold px-1">✕</button>
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                    <input type="text" placeholder="Project Name" class="vf-proj-name vf-input w-full px-2.5 py-1 bg-zinc-950 border border-zinc-800 rounded text-xs text-white outline-none focus:border-emerald-500" value="${p.name || ''}">
+                    <input type="text" placeholder="Subtitle / Tech Stack" class="vf-proj-subtitle vf-input w-full px-2.5 py-1 bg-zinc-950 border border-zinc-800 rounded text-xs text-white outline-none focus:border-emerald-500" value="${p.subtitle || ''}">
+                </div>
+                <textarea placeholder="Bullet points (one per line)" rows="3" class="vf-proj-highlights vf-input w-full px-2.5 py-1 bg-zinc-950 border border-zinc-800 rounded text-xs text-white outline-none focus:border-emerald-500 resize-none">${(p.highlights || []).join('\n')}</textarea>
+            `;
+            card.querySelector('.vf-remove-card').addEventListener('click', () => {
+                card.remove();
+                syncVFToJSON();
+            });
+            vfProjectList.appendChild(card);
+        }
+
+        document.getElementById('vf-add-work-btn')?.addEventListener('click', () => {
+            addWorkItemToVF();
+            syncVFToJSON();
+        });
+        document.getElementById('vf-add-skill-btn')?.addEventListener('click', () => {
+            addSkillItemToVF();
+            syncVFToJSON();
+        });
+        document.getElementById('vf-add-project-btn')?.addEventListener('click', () => {
+            addProjectItemToVF();
+            syncVFToJSON();
+        });
+
+        function syncVFToJSON() {
+            if (isPopulatingVF) return;
+            try {
+                let original = {};
+                try { original = JSON.parse(jsonTextarea.value); } catch(e){}
+
+                const work = Array.from(vfWorkList?.children || []).map(card => ({
+                    position: card.querySelector('.vf-work-pos')?.value || '',
+                    company: card.querySelector('.vf-work-company')?.value || '',
+                    startDate: card.querySelector('.vf-work-start')?.value || '',
+                    endDate: card.querySelector('.vf-work-end')?.value || '',
+                    location: card.querySelector('.vf-work-location')?.value || '',
+                    highlights: (card.querySelector('.vf-work-highlights')?.value || '').split('\n').map(s => s.trim()).filter(Boolean)
+                }));
+
+                const skills = Array.from(vfSkillList?.children || []).map(card => ({
+                    name: card.querySelector('.vf-skill-name')?.value || '',
+                    keywords: (card.querySelector('.vf-skill-keywords')?.value || '').split(',').map(s => s.trim()).filter(Boolean)
+                }));
+
+                const projects = Array.from(vfProjectList?.children || []).map(card => ({
+                    name: card.querySelector('.vf-proj-name')?.value || '',
+                    subtitle: card.querySelector('.vf-proj-subtitle')?.value || '',
+                    highlights: (card.querySelector('.vf-proj-highlights')?.value || '').split('\n').map(s => s.trim()).filter(Boolean)
+                }));
+
+                const updated = {
+                    ...original,
+                    basics: {
+                        ...(original.basics || {}),
+                        name: document.getElementById('vf-name')?.value || '',
+                        title: document.getElementById('vf-title')?.value || '',
+                        email: document.getElementById('vf-email')?.value || '',
+                        phone: document.getElementById('vf-phone')?.value || '',
+                        location: document.getElementById('vf-location')?.value || '',
+                        website: document.getElementById('vf-website')?.value || '',
+                        github: document.getElementById('vf-github')?.value || '',
+                        linkedin: document.getElementById('vf-linkedin')?.value || '',
+                        summary: document.getElementById('vf-summary')?.value || ''
+                    },
+                    work,
+                    skills,
+                    projects
+                };
+
+                jsonTextarea.value = JSON.stringify(updated, null, 2);
+                jsonTextarea.dispatchEvent(new Event('input'));
+            } catch(e) {}
+        }
+
+        document.getElementById('tab-visual-content')?.addEventListener('input', syncVFToJSON);
+
+        if (vfSaveBtn) {
+            vfSaveBtn.addEventListener('click', () => {
+                syncVFToJSON();
+                if (saveJsonBtn) saveJsonBtn.click();
+            });
+        }
 
         // Toggle Job Description Section
         if (toggleJdBtn && jdContainer) {
@@ -538,6 +815,7 @@
                 if (res.ok) {
                     const data = await res.json();
                     jsonTextarea.value = JSON.stringify(data, null, 2);
+                    populateVisualEditor(data);
                     if (jsonSyntaxBadge) {
                         jsonSyntaxBadge.textContent = 'Valid JSON';
                         jsonSyntaxBadge.className = 'text-[11px] font-mono px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20';
