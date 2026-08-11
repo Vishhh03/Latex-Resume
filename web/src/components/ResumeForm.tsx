@@ -12,6 +12,7 @@ interface ResumeFormProps {
 export default function ResumeForm({ onSuccess, apiUrl, version }: ResumeFormProps) {
     const [instruction, setInstruction] = useState('');
     const [jobDescription, setJobDescription] = useState('');
+    const [agentMode, setAgentMode] = useState(true);
     const [showJD, setShowJD] = useState(false);
     const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
     const [message, setMessage] = useState('');
@@ -24,12 +25,12 @@ export default function ResumeForm({ onSuccess, apiUrl, version }: ResumeFormPro
         setMessage('');
 
         try {
-            const result = await updateResume(instruction, jobDescription, apiUrl, version);
+            const result = await updateResume(instruction, jobDescription, apiUrl, version, agentMode);
 
             if (result.error) throw new Error(result.error);
 
             setStatus('success');
-            setMessage(`Success! Structured update applied.`);
+            setMessage(agentMode ? `Success! Autonomous Agent optimization applied.` : `Success! Structured update applied.`);
             setInstruction('');
             setJobDescription('');
             setShowJD(false);
@@ -62,6 +63,19 @@ export default function ResumeForm({ onSuccess, apiUrl, version }: ResumeFormPro
                     />
                 </div>
 
+                <div className="p-3 bg-zinc-900/90 border border-emerald-500/20 rounded-lg flex items-center justify-between">
+                    <label className="flex items-center gap-2 text-xs font-semibold text-emerald-400 cursor-pointer">
+                        <input
+                            type="checkbox"
+                            checked={agentMode}
+                            onChange={(e) => setAgentMode(e.target.checked)}
+                            className="rounded accent-emerald-500 bg-zinc-950 border-zinc-700"
+                        />
+                        Truly Helpful Resume Agent Mode (ATS Scoring + Layout Verification)
+                    </label>
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">AGENTIC</span>
+                </div>
+
                 <div className="flex items-center justify-between">
                     <button
                         type="button"
@@ -73,12 +87,13 @@ export default function ResumeForm({ onSuccess, apiUrl, version }: ResumeFormPro
 
                     <button
                         type="submit"
-                        className="px-6 py-2 bg-white text-black font-medium rounded-lg hover:bg-zinc-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        className="px-6 py-2 bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-bold rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm"
                         disabled={status === 'loading'}
                     >
-                        {status === 'loading' ? 'Processing...' : 'Update Resume'}
+                        {status === 'loading' ? 'Processing Agent...' : (agentMode ? 'Run Resume Agent' : 'Update Resume')}
                     </button>
                 </div>
+
 
                 {showJD && (
                     <div className="animate-in fade-in slide-in-from-top-2 duration-300">

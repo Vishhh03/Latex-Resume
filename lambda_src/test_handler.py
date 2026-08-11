@@ -215,5 +215,117 @@ class TestResumeServerlessBackend(unittest.TestCase):
         res = handler(event, None)
         self.assertEqual(res["statusCode"], 200)
 
+    def test_resume_agent_tools(self):
+        """Test individual ResumeAgent tool execution."""
+        try:
+            from lambda_src.agent import ResumeAgent
+        except ImportError:
+            from agent import ResumeAgent
+
+        agent = ResumeAgent()
+        jd_res = agent.analyze_job_description("We are looking for a Python AWS Lambda Engineer with Docker and Terraform experience.")
+        self.assertIn("keywords", jd_res)
+        self.assertIn("python", jd_res["keywords"])
+        self.assertIn("aws", jd_res["keywords"])
+
+        sample_resume = {
+            "basics": {"name": "Test", "title": "Dev", "email": "t@t.com", "location": "L"},
+            "skills": [{"name": "Languages", "keywords": ["Python", "AWS"]}]
+        }
+
+        ats_res = agent.calculate_ats_alignment(sample_resume, ["python", "aws", "docker"])
+        self.assertGreater(ats_res["score"], 0)
+        self.assertIn("python", ats_res["matched_keywords"])
+        self.assertIn("docker", ats_res["missing_keywords"])
+
+        updated = agent.update_resume_section(sample_resume, "skills", [{"name": "Tech", "keywords": ["Python", "AWS", "Docker"]}])
+        self.assertEqual(len(updated["skills"][0]["keywords"]), 3)
+
+    @patch("lambda_src.handler.compile_typst")
+    def test_handler_post_agent_endpoint(self, mock_compile):
+        """Test POST /agent endpoint runs autonomous agentic workflow."""
+        mock_compile.return_value = b"%PDF-1.4 Mock PDF Content Single Page"
+
+        event = {
+            "rawPath": "/agent",
+            "requestContext": {"http": {"method": "POST"}},
+            "body": json.dumps({
+                "instruction": "Tailor resume for Cloud Architect role",
+                "job_description": "Requires AWS Lambda, Python, Terraform, and Docker."
+            })
+        }
+        res = handler(event, None)
+        self.assertEqual(res["statusCode"], 200)
+
+
+        body = json.loads(res["body"])
+        self.assertEqual(body["status"], "success")
+        self.assertIn("ats_score_before", body)
+        self.assertIn("ats_score_after", body)
+        self.assertIn("trace_log", body)
+        self.assertTrue(len(body["trace_log"]) >= 3)
+        self.assertTrue(body["layout_verification"]["fits_single_page"])
+
+    @patch("lambda_src.agent.urllib.request.urlopen")
+    def test_resume_agent_byok_openai(self, mock_urlopen):
+        """Test BYOK (Bring Your Own Key) OpenAI provider call."""
+        try:
+            from lambda_src.agent import ResumeAgent
+        except ImportError:
+            from agent import ResumeAgent
+
+        mock_resp = MagicMock()
+        mock_resp.read.return_value = json.dumps({
+            "choices": [{"message": {"content": json.dumps({
+                "basics": {"name": "BYOK Candidate", "title": "Senior AI Architect", "email": "a@b.com", "location": "C"}
+            })}}]
+        }).encode("utf-8")
+        mock_resp.__enter__.return_value = mock_resp
+        mock_urlopen.return_value = mock_resp
+
+        agent = ResumeAgent()
+        res = agent.run_agentic_workflow(
+            initial_resume={"basics": {"name": "Test", "title": "Dev", "email": "a@b.com", "location": "c"}},
+            instruction="Test BYOK OpenAI",
+            job_description="Requires Python, OpenAI, Docker",
+            byok={"provider": "openai", "api_key": "sk-testkey123", "model_id": "gpt-4o"}
+        )
+        self.assertEqual(res["status"], "success")
+        self.assertEqual(res["data"]["basics"]["title"], "Senior AI Architect")
+
+    @patch("lambda_src.agent.urllib.request.urlopen")
+    def test_resume_agent_byok_google(self, mock_urlopen):
+        """Test BYOK (Bring Your Own Key) Google Gemini provider call."""
+        try:
+            from lambda_src.agent import ResumeAgent
+        except ImportError:
+            from agent import ResumeAgent
+
+        mock_resp = MagicMock()
+        mock_resp.read.return_value = json.dumps({
+            "candidates": [{
+                "content": {
+                    "parts": [{"text": json.dumps({
+                        "basics": {"name": "Gemini Candidate", "title": "Staff Gemini Engineer", "email": "g@b.com", "location": "C"}
+                    })}]
+                }
+            }]
+        }).encode("utf-8")
+        mock_resp.__enter__.return_value = mock_resp
+        mock_urlopen.return_value = mock_resp
+
+        agent = ResumeAgent()
+        res = agent.run_agentic_workflow(
+            initial_resume={"basics": {"name": "Test", "title": "Dev", "email": "a@b.com", "location": "c"}},
+            instruction="Test BYOK Google",
+            job_description="Requires Python, Gemini, Docker",
+            byok={"provider": "google", "api_key": "AIzaSyTestKey123", "model_id": "gemini-1.5-flash"}
+        )
+        self.assertEqual(res["status"], "success")
+        self.assertEqual(res["data"]["basics"]["title"], "Staff Gemini Engineer")
+
 if __name__ == "__main__":
     unittest.main()
+
+
+

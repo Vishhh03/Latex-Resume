@@ -126,19 +126,80 @@
                             </div>
                         </div>
 
+                        <!-- Agentic Mode Toggle & BYOK Settings -->
+                        <div class="p-3 bg-zinc-950/80 border border-emerald-500/20 rounded space-y-2.5">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center gap-2.5">
+                                    <input type="checkbox" id="agent-mode-checkbox" name="agent_mode" checked class="h-4 w-4 rounded accent-emerald-500 bg-zinc-900 border-zinc-700">
+                                    <div>
+                                        <label for="agent-mode-checkbox" class="text-xs font-semibold text-emerald-400 cursor-pointer">
+                                            Truly Helpful Resume Agent Mode
+                                        </label>
+                                        <p class="text-[11px] text-zinc-400">Multi-tool loop: JD Analysis ➔ ATS Scoring ➔ Layout Self-Correction</p>
+                                    </div>
+                                </div>
+                                <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">AGENTIC</span>
+                            </div>
+
+                            <div class="border-t border-zinc-800/80 pt-                                 <button type="button" id="toggle-byok-btn" class="text-[11px] font-medium text-zinc-400 hover:text-white transition-colors flex items-center gap-1">
+                                    🔑 BYOK Settings (Use Google Gemini, OpenAI, Anthropic, OpenRouter, or Bedrock)
+                                </button>
+                                <div id="byok-container" class="hidden mt-2 p-2.5 bg-zinc-900/90 border border-zinc-800 rounded space-y-2 text-xs">
+                                    <div class="grid grid-cols-2 gap-2">
+                                        <div>
+                                            <label class="block text-[11px] text-zinc-400 mb-0.5">Provider</label>
+                                            <select id="byok-provider" class="w-full px-2 py-1 bg-zinc-950 border border-zinc-800 rounded text-xs text-white outline-none">
+                                                <option value="bedrock">AWS Bedrock (Default)</option>
+                                                <option value="google">Google Gemini (gemini-1.5-flash / pro)</option>
+                                                <option value="openai">OpenAI (gpt-4o / gpt-4o-mini)</option>
+                                                <option value="anthropic">Anthropic (Claude 3.5 Sonnet)</option>
+                                                <option value="openrouter">OpenRouter (DeepSeek R1 / any)</option>
+                                            </select>
+                                        </div>
+ </div>
+                                        <div>
+                                            <label class="block text-[11px] text-zinc-400 mb-0.5">Custom Model ID (Optional)</label>
+                                            <input type="text" id="byok-model" placeholder="e.g., gpt-4o, claude-3-5-sonnet-20241022" class="w-full px-2 py-1 bg-zinc-950 border border-zinc-800 rounded text-xs text-white outline-none">
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label class="block text-[11px] text-zinc-400 mb-0.5">API Key (BYOK)</label>
+                                        <input type="password" id="byok-key" placeholder="Paste your API key (sk-..., sk-ant-...)" class="w-full px-2 py-1 bg-zinc-950 border border-zinc-800 rounded text-xs text-white outline-none font-mono">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+
                         <div class="flex items-center justify-between pt-1">
                             <span id="ai-status-msg" class="text-xs font-medium text-zinc-400"></span>
 
                             <button 
                                 type="submit" 
                                 id="ai-submit-btn"
-                                class="px-5 py-2 bg-white text-zinc-950 font-semibold text-xs rounded hover:bg-zinc-200 transition-colors flex items-center gap-2 shadow">
+                                class="px-5 py-2 bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-bold text-xs rounded transition-colors flex items-center gap-2 shadow">
                                 <span class="spinner text-xs animate-spin font-mono">/</span>
-                                <span>Update Resume</span>
+                                <span>Run Resume Agent</span>
                             </button>
                         </div>
                     </form>
+
+                    <!-- Agent Execution Trace Log Card -->
+                    <div id="agent-trace-card" class="hidden mt-4 p-3 bg-zinc-950 border border-zinc-800 rounded space-y-2">
+                        <div class="flex items-center justify-between border-b border-zinc-800 pb-2">
+                            <div class="flex items-center gap-2">
+                                <span class="h-2 w-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                                <h3 class="text-xs font-bold text-white tracking-wide">Agent Execution Trace</h3>
+                            </div>
+                            <span id="ats-score-badge" class="text-[11px] font-mono px-2 py-0.5 rounded bg-zinc-800 text-emerald-400 border border-zinc-700">
+                                ATS Score: --
+                            </span>
+                        </div>
+                        <div id="agent-trace-list" class="space-y-1.5 font-mono text-[11px] max-h-44 overflow-y-auto pr-1">
+                        </div>
+                    </div>
                 </div>
+
 
                 <!-- Raw JSON Tab -->
                 <div id="tab-json-content" class="hidden space-y-3 h-full flex flex-col">
@@ -254,91 +315,53 @@
             fetchJsonData();
         });
 
-        // Toggle Job Description
-        toggleJdBtn.addEventListener('click', () => {
-            const isHidden = jdContainer.classList.contains('hidden');
-            if (isHidden) {
-                jdContainer.classList.remove('hidden');
-                toggleJdBtn.textContent = '- Remove Job Description';
-            } else {
-                jdContainer.classList.add('hidden');
-                toggleJdBtn.textContent = '+ Add Job Description (Auto-Tailor)';
-            }
-        });
-
-        // Refresh PDF
-        refreshPdfBtn.addEventListener('click', () => {
-            pdfLoading.classList.remove('hidden');
-            pdfFrame.src = `/api/pdf?t=${Date.now()}`;
-            setTimeout(() => pdfLoading.classList.add('hidden'), 800);
-            showToast('PDF Preview Refreshed', 'info');
-        });
-
-        loadJsonBtn.addEventListener('click', fetchJsonData);
-
-        // Fetch JSON Data
-        async function fetchJsonData() {
-            try {
-                const res = await fetch('/api/resume');
-                if (res.ok) {
-                    const data = await res.json();
-                    jsonTextarea.value = JSON.stringify(data, null, 2);
-                }
-            } catch (e) {
-                console.error(e);
-            }
-        }
-        fetchJsonData();
-
-        loadJsonBtn.addEventListener('click', fetchJsonData);
-
-        const saveJsonBtn = document.getElementById('save-json-btn');
-        if (saveJsonBtn) {
-            saveJsonBtn.addEventListener('click', async () => {
-                try {
-                    const parsed = JSON.parse(jsonTextarea.value);
-                    pdfLoading.classList.remove('hidden');
-                    const res = await fetch('/api/save', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ resume: parsed })
-                    });
-                    if (res.ok) {
-                        showToast('JSON Resume Saved & Compiled!', 'success');
-                        pdfFrame.src = `/api/pdf?t=${Date.now()}`;
-                    } else {
-                        showToast('Failed to save JSON', 'error');
-                    }
-                } catch (e) {
-                    showToast('Invalid JSON: ' + (e instanceof Error ? e.message : String(e)), 'error');
-                } finally {
-                    pdfLoading.classList.add('hidden');
-                }
+        // Toggle BYOK Settings
+        const toggleByokBtn = document.getElementById('toggle-byok-btn');
+        const byokContainer = document.getElementById('byok-container');
+        if (toggleByokBtn && byokContainer) {
+            toggleByokBtn.addEventListener('click', () => {
+                byokContainer.classList.toggle('hidden');
             });
         }
 
-        // --- HTMX Event Interceptors for AI Update ---
+        // --- HTMX Event Interceptors for AI & Agent Updates ---
         document.body.addEventListener('htmx:configRequest', (event) => {
-            if (event.detail.path === '/api/update') {
+            if (event.detail.path === '/api/update' || event.detail.path === '/api/agent') {
                 pdfLoading.classList.remove('hidden');
-                document.getElementById('ai-status-msg').textContent = 'Processing with Bedrock LLM...';
+                const isAgent = document.getElementById('agent-mode-checkbox').checked;
+                if (isAgent) {
+                    event.detail.path = '/api/agent';
+                }
+                
+                const provider = document.getElementById('byok-provider')?.value || 'bedrock';
+                const apiKey = document.getElementById('byok-key')?.value || '';
+                const modelId = document.getElementById('byok-model')?.value || '';
+                
+                const byok = {
+                    provider,
+                    api_key: apiKey,
+                    model_id: modelId
+                };
+
+                document.getElementById('ai-status-msg').textContent = isAgent ? `Running Resume Agent (${provider.toUpperCase()})...` : 'Processing with LLM...';
                 const instruction = document.getElementById('instruction').value;
                 const job_description = document.getElementById('job_description').value;
                 event.detail.headers['Content-Type'] = 'application/json';
                 event.detail.parameters = {};
-                event.detail.body = JSON.stringify({ instruction, job_description });
+                event.detail.body = JSON.stringify({ instruction, job_description, agent_mode: isAgent, byok });
             }
         });
 
+
         document.body.addEventListener('htmx:afterRequest', (event) => {
-            if (event.detail.path === '/api/update') {
+            if (event.detail.path === '/api/update' || event.detail.path === '/api/agent') {
                 pdfLoading.classList.add('hidden');
                 document.getElementById('ai-status-msg').textContent = '';
                 if (event.detail.successful) {
                     try {
                         const response = JSON.parse(event.detail.xhr.responseText);
                         if (response.status === 'success' || response.data) {
-                            showToast('Resume updated successfully!', 'success');
+                            showToast('Resume updated successfully by Agent!', 'success');
                             if (response.pdf_base64) {
                                 pdfFrame.src = `data:application/pdf;base64,${response.pdf_base64}`;
                             } else {
@@ -347,7 +370,30 @@
                             if (response.data) {
                                 jsonTextarea.value = JSON.stringify(response.data, null, 2);
                             }
+                            
+                            // Render Agent Trace Log & ATS Score
+                            if (response.trace_log && Array.isArray(response.trace_log)) {
+                                const traceCard = document.getElementById('agent-trace-card');
+                                const traceList = document.getElementById('agent-trace-list');
+                                const scoreBadge = document.getElementById('ats-score-badge');
+                                
+                                traceCard.classList.remove('hidden');
+                                if (response.ats_score_after !== undefined) {
+                                    scoreBadge.textContent = `ATS Score: ${response.ats_score_before || 0}% ➔ ${response.ats_score_after}%`;
+                                }
+
+                                traceList.innerHTML = response.trace_log.map(item => `
+                                    <div class="flex items-start gap-2 py-1 border-b border-zinc-900/60 last:border-none">
+                                        <span class="px-1.5 py-0.5 text-[9px] rounded font-bold ${
+                                            item.status === 'SUCCESS' || item.status === 'PASSED' || item.status === 'COMPLETED' ? 'bg-emerald-500/20 text-emerald-400' :
+                                            item.status === 'OVERFLOW' || item.status === 'TRIMMING' ? 'bg-amber-500/20 text-amber-400' : 'bg-zinc-800 text-zinc-400'
+                                        }">${item.tool}</span>
+                                        <span class="text-zinc-300 flex-1">${item.details}</span>
+                                    </div>
+                                `).join('');
+                            }
                             document.getElementById('instruction').value = '';
+
                         } else {
                             showToast(response.error || 'Failed to update resume', 'error');
                         }

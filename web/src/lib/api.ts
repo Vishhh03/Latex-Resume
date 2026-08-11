@@ -25,10 +25,12 @@ export async function updateResume(
     instruction: string,
     job_description: string | undefined,
     baseUrl: string,
-    version?: string
+    version?: string,
+    agent_mode: boolean = true
 ): Promise<UpdateResponse> {
     try {
-        const response = await fetch(`${baseUrl}/update`, {
+        const endpoint = agent_mode ? `${baseUrl}/agent` : `${baseUrl}/update`;
+        const response = await fetch(endpoint, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -36,9 +38,11 @@ export async function updateResume(
             body: JSON.stringify({
                 instruction,
                 job_description,
-                version
+                version,
+                agent_mode
             }),
         });
+
 
         const data = await response.json();
         if (!response.ok) {

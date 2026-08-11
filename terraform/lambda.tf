@@ -2,7 +2,7 @@ data "archive_file" "lambda_zip" {
   type        = "zip"
   source_dir  = "${path.module}/../lambda_src"
   output_path = "${path.module}/handler.zip"
-  excludes    = ["*.zip", "__pycache__", "bin", "resume.json"]
+  excludes    = ["*.zip", "__pycache__", "*.pyc", "resume.json"]
 }
 
 resource "aws_lambda_function" "resume_api" {
@@ -13,7 +13,8 @@ resource "aws_lambda_function" "resume_api" {
   handler          = "handler.handler"
   runtime          = "python3.11"
   timeout          = 30
-  memory_size      = 512
+  memory_size      = 1024
+
 
   environment {
     variables = {

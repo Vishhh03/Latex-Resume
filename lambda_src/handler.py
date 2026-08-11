@@ -6,6 +6,14 @@ import base64
 import urllib.request
 import boto3
 
+try:
+    from lambda_src.agent import ResumeAgent
+except ImportError:
+    try:
+        from agent import ResumeAgent
+    except ImportError:
+        ResumeAgent = None
+
 bedrock = boto3.client("bedrock-runtime", region_name=os.environ.get("AWS_REGION", "us-east-1"))
 s3 = boto3.client("s3", region_name=os.environ.get("AWS_REGION", "us-east-1"))
 
@@ -100,8 +108,10 @@ def ensure_typst_binary():
             return "./typst.exe"
         return "typst"
 
-    # Check local or packaged typst
+    # Check local or packaged typst binary
     candidates = [
+        "./bin/typst",
+        os.path.join(os.path.dirname(__file__), "bin", "typst"),
         "./typst",
         os.path.join(os.path.dirname(__file__), "typst"),
         "/tmp/typst"
@@ -109,6 +119,7 @@ def ensure_typst_binary():
     for c in candidates:
         if os.path.exists(c):
             return c
+
 
     tmp_typst = "/tmp/typst"
     # Auto-fetch static Linux typst binary on Lambda cold start
@@ -171,18 +182,24 @@ def handler(event, context):
 
     body = {}
     if event.get("body"):
-        try:
-            raw_body = event["body"]
-            if event.get("isBase64Encoded"):
-                raw_body = base64.b64decode(raw_body).decode("utf-8")
+        raw_body = event["body"]
+        if isinstance(raw_body, dict):
+            body = raw_body
+        elif isinstance(raw_body, str):
             try:
-                body = json.loads(raw_body)
+                if event.get("isBase64Encoded"):
+                    raw_body = base64.b64decode(raw_body).decode("utf-8")
+                try:
+                    body = json.loads(raw_body)
+                except Exception:
+                    import urllib.parse
+                    parsed = urllib.parse.parse_qs(raw_body)
+                    body = {k: v[0] if len(v) == 1 else v for k, v in parsed.items()}
             except Exception:
-                import urllib.parse
-                parsed = urllib.parse.parse_qs(raw_body)
-                body = {k: v[0] if len(v) == 1 else v for k, v in parsed.items()}
-        except Exception:
-            body = {}
+                body = {}
+    if not isinstance(body, dict):
+        body = {}
+
 
     try:
         # GET /health
@@ -292,15 +309,61 @@ def handler(event, context):
             except Exception:
                 return create_response(200, [])
 
-        # POST /update (AI Editing via Bedrock Converse API)
-        elif path == "/update" and http_method == "POST":
+        # POST /agent or POST /update (Autonomous Resume Agent Workflow)
+        elif (path == "/agent" or path == "/update") and http_method == "POST":
             instruction = body.get("instruction", "")
             job_desc = body.get("job_description", "")
+            agent_mode = body.get("agent_mode", True) if path == "/agent" else body.get("agent_mode", False)
             current_resume = get_current_resume()
 
-            if not instruction:
-                return create_response(400, {"error": "Missing instruction"})
+            if not instruction and not job_desc:
+                return create_response(400, {"error": "Missing instruction or job_description"})
 
+            # Extract BYOK (Bring Your Own Key) configuration
+            headers_dict = event.get("headers", {}) or {}
+            headers_lower = {k.lower(): v for k, v in headers_dict.items()}
+            
+            byok = body.get("byok", {}) if isinstance(body.get("byok"), dict) else {}
+            if not byok.get("api_key") and headers_lower.get("x-api-key"):
+                byok["api_key"] = headers_lower.get("x-api-key")
+            if not byok.get("provider") and headers_lower.get("x-llm-provider"):
+                byok["provider"] = headers_lower.get("x-llm-provider")
+            if not byok.get("model_id") and headers_lower.get("x-model-id"):
+                byok["model_id"] = headers_lower.get("x-model-id")
+
+            # If agentic mode requested or hitting /agent endpoint
+            if agent_mode and ResumeAgent is not None:
+                agent = ResumeAgent(bedrock_client=bedrock, bedrock_model_id=BEDROCK_MODEL_ID, compile_func=compile_typst)
+                result = agent.run_agentic_workflow(
+                    initial_resume=current_resume,
+                    instruction=instruction or "Optimize resume for target role",
+                    job_description=job_desc,
+                    byok=byok
+                )
+
+
+                updated_resume = result["data"]
+                
+                # Save to /tmp
+                tmp_path = "/tmp/resume.json" if os.path.exists("/tmp") else "resume.json"
+                with open(tmp_path, "w") as f:
+                    json.dump(updated_resume, f, indent=2)
+
+                # Persist update to S3
+                if BUCKET_NAME:
+                    try:
+                        s3.put_object(
+                            Bucket=BUCKET_NAME,
+                            Key="resume.json",
+                            Body=json.dumps(updated_resume, indent=2).encode("utf-8"),
+                            ContentType="application/json"
+                        )
+                    except Exception as s3_err:
+                        print(f"Warning: Failed to persist updated resume to S3: {s3_err}")
+
+                return create_response(200, result)
+
+            # Single-pass legacy update fallback
             prompt = (
                 f"You are an expert resume architect. Update the candidate's JSON resume based on the following instruction:\n\n"
                 f"Instruction: {instruction}\n"
@@ -310,17 +373,24 @@ def handler(event, context):
             )
 
             # Bedrock Converse API with Structured JSON Output
-            response = bedrock.converse(
-                modelId=BEDROCK_MODEL_ID,
-                messages=[
-                    {
-                        "role": "user",
-                        "content": [{"text": prompt}]
-                    }
-                ],
-                system=[{"text": "You are a professional resume editor. Return ONLY valid JSON matching the resume schema."}],
-                inferenceConfig={"temperature": 0.1, "maxTokens": 4096}
-            )
+            try:
+                response = bedrock.converse(
+                    modelId=BEDROCK_MODEL_ID,
+                    messages=[
+                        {
+                            "role": "user",
+                            "content": [{"text": prompt}]
+                        }
+                    ],
+                    system=[{"text": "You are a professional resume editor. Return ONLY valid JSON matching the resume schema."}],
+                    inferenceConfig={"temperature": 0.1, "maxTokens": 4096}
+                )
+            except Exception as b_err:
+                err_msg = str(b_err)
+                if "AccessDeniedException" in err_msg or "access" in err_msg.lower():
+                    return create_response(403, {"error": "Bedrock Model access denied. Ensure model access is enabled in your AWS console."})
+                return create_response(502, {"error": f"Bedrock Converse API error: {err_msg}"})
+
 
             response_text = response["output"]["message"]["content"][0]["text"]
             
@@ -356,6 +426,7 @@ def handler(event, context):
                 "data": updated_resume,
                 "pdf_base64": base64.b64encode(pdf_bytes).decode("utf-8")
             })
+
 
         # POST /commit (Push to GitHub)
         elif path == "/commit" and http_method == "POST":
@@ -407,3 +478,5 @@ def handler(event, context):
 
     except Exception as e:
         return create_response(500, {"error": str(e)})
+
+
